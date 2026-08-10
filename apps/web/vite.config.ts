@@ -8,5 +8,9 @@ export default defineConfig({
   resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
   // The in-app browser connects from outside Vite's process, so localhost-only
   // binding would make the development page appear unavailable.
-  server: { host: '0.0.0.0', port: 5173 }
+  server: {
+    host: '0.0.0.0',
+    port: 5173,
+    proxy: { '/fragments': 'http://localhost:3001' }
+  }
 });

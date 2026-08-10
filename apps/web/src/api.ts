@@ -1,6 +1,6 @@
 import type { CreateFragmentInput, Fragment, UpdateFragmentInput } from '@fragments/shared';
 
-const baseUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:3001';
+const baseUrl = import.meta.env.VITE_API_URL ?? (import.meta.env.DEV ? 'http://localhost:3001' : '');
 export const isVisualDemo = import.meta.env.VITE_VISUAL_DEMO === 'true';
 
 const demoFragments: Fragment[] = [
@@ -51,7 +51,7 @@ const demoApi = {
 };
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${baseUrl}${path}`, { headers: { 'Content-Type': 'application/json' }, ...init });
+  const response = await fetch(`${baseUrl}${path}`, { credentials: 'include', headers: { 'Content-Type': 'application/json' }, ...init });
   if (!response.ok) {
     const body = await response.json().catch(() => ({ error: 'Request failed' }));
     throw new Error(body.error ?? 'Request failed');
@@ -60,10 +60,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 const liveApi = {
-  list(date: string) { return request<Fragment[]>(`/fragments?date=${date}`); },
-  create(input: CreateFragmentInput) { return request<Fragment>('/fragments', { method: 'POST', body: JSON.stringify(input) }); },
-  update(id: string, input: UpdateFragmentInput) { return request<Fragment>(`/fragments/${id}`, { method: 'PATCH', body: JSON.stringify(input) }); },
-  remove(id: string) { return request<void>(`/fragments/${id}`, { method: 'DELETE' }); }
+  list(date: string) { return request<Fragment[]>(`${baseUrl ? '/fragments' : '/api/fragments'}?date=${date}`); },
+  create(input: CreateFragmentInput) { return request<Fragment>(baseUrl ? '/fragments' : '/api/fragments', { method: 'POST', body: JSON.stringify(input) }); },
+  update(id: string, input: UpdateFragmentInput) { return request<Fragment>(`${baseUrl ? '/fragments' : '/api/fragments'}/${id}`, { method: 'PATCH', body: JSON.stringify(input) }); },
+  remove(id: string) { return request<void>(`${baseUrl ? '/fragments' : '/api/fragments'}/${id}`, { method: 'DELETE' }); }
 };
 
 // GitHub Pages can only host static files. Its demo keeps interactions useful

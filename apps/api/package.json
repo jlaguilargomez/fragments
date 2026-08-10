@@ -10,6 +10,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@fragments/server-core": "*",
     "@fragments/shared": "*",
     "better-sqlite3": "^12.6.2",
     "cors": "^2.8.5",

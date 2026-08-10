@@ -9,20 +9,20 @@ const updateSchema = z.object({ title: z.string().max(200).nullable().optional()
 
 export function createFragmentsRouter(repository: FragmentRepository): Router {
   const router = Router();
-  router.post('/', (request, response, next) => {
-    try { response.status(201).json(createFragment(repository, createSchema.parse(request.body))); } catch (error) { next(error); }
+  router.post('/', async (request, response, next) => {
+    try { response.status(201).json(await createFragment(repository, createSchema.parse(request.body))); } catch (error) { next(error); }
   });
-  router.get('/', (request, response, next) => {
-    try { response.json(getFragmentsForDate(repository, dateSchema.parse(request.query.date))); } catch (error) { next(error); }
+  router.get('/', async (request, response, next) => {
+    try { response.json(await getFragmentsForDate(repository, dateSchema.parse(request.query.date))); } catch (error) { next(error); }
   });
-  router.get('/:id', (request, response, next) => {
-    try { response.json(getFragment(repository, request.params.id)); } catch (error) { next(error); }
+  router.get('/:id', async (request, response, next) => {
+    try { response.json(await getFragment(repository, request.params.id)); } catch (error) { next(error); }
   });
-  router.patch('/:id', (request, response, next) => {
-    try { response.json(updateFragment(repository, request.params.id, updateSchema.parse(request.body))); } catch (error) { next(error); }
+  router.patch('/:id', async (request, response, next) => {
+    try { response.json(await updateFragment(repository, request.params.id, updateSchema.parse(request.body))); } catch (error) { next(error); }
   });
-  router.delete('/:id', (request, response, next) => {
-    try { deleteFragment(repository, request.params.id); response.status(204).send(); } catch (error) { next(error); }
+  router.delete('/:id', async (request, response, next) => {
+    try { await deleteFragment(repository, request.params.id); response.status(204).send(); } catch (error) { next(error); }
   });
   return router;
 }

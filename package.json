@@ -10,7 +10,8 @@
     "dev": "npm run dev -w @fragments/api & npm run dev -w @fragments/web",
     "build": "npm run build --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
-    "typecheck": "npm run typecheck --workspaces --if-present"
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "build:worker": "npm run build -w @fragments/web && npm run build -w @fragments/worker"
   },
   "engines": {
     "node": ">=22"

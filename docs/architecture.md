@@ -1,15 +1,22 @@
 # Architecture
 
-Fragments is a small npm-workspaces monorepo. It deliberately keeps the first vertical slice close to the product: a Vue page calls an Express API, which validates input, runs small application functions, and persists fragments in SQLite.
+Fragments is a small npm-workspaces monorepo. The browser can call either the
+local Express runtime or the Cloudflare Worker runtime. Both runtimes share the
+same asynchronous application functions and repository contracts, while their
+database adapters remain separate.
 
 ```mermaid
 flowchart LR
   B[Browser] --> V[Vue web app]
   V -->|HTTP JSON| E[Express API]
-  E --> R[Fragments router]
-  R --> A[Application functions]
-  A --> S[SQLite repository]
-  S --> D[(SQLite file)]
+  V -->|HTTP JSON| W[Cloudflare Worker]
+  E --> A[Shared application functions]
+  W --> A
+  A --> S[Repository contract]
+  S --> L[SQLite adapter]
+  S --> D[D1 adapter]
+  L --> F[(Local SQLite file)]
+  D --> Q[(Cloudflare D1)]
 ```
 
 ## Repository structure
@@ -17,17 +24,23 @@ flowchart LR
 | Area | Responsibility |
 | --- | --- |
 | `apps/web` | Reading and writing UI, date navigation, API client. |
-| `apps/api/src/presentation` | HTTP routes, DTO validation, status codes, error translation. |
-| `apps/api/src/application` | Create, read, update and delete use cases. |
-| `apps/api/src/domain` | The persisted fragment shape and the small storage contract. |
-| `apps/api/src/infrastructure` | SQLite schema and prepared SQL statements. |
+| `packages/server-core` | Async application functions and repository contracts shared by both runtimes. |
+| `apps/api/src/presentation` | Local Express routes, DTO validation, status codes, error translation. |
+| `apps/api/src/infrastructure` | Local SQLite connection, migrations and prepared SQL statements. |
+| `apps/worker` | Cloudflare Worker entrypoint, D1 adapter, Wrangler config and migrations. |
 | `packages/shared` | Types exchanged by the browser and API. |
 
-This is a pragmatic separation, not a framework. The API has one domain object and one storage mechanism, so each layer remains a small file. The application functions depend on a minimal repository interface because it makes their storage boundary explicit; no generic repository framework or dependency-injection container is introduced.
+This is a pragmatic separation, not a framework. The application functions depend
+on a minimal repository interface because it makes the storage boundary explicit;
+no generic repository framework or dependency-injection container is introduced.
 
 ## Request flow
 
-When a person saves a fragment, `FragmentComposer.vue` calls `api.ts`. Express parses JSON and `fragments-router.ts` validates it with Zod. `createFragment` normalises the optional title, assigns an ID and timestamps, then asks the SQLite repository to insert it. The created fragment returns as JSON with HTTP 201 and the Vue page reloads the selected day's chronological list.
+When a person saves a fragment, `FragmentComposer.vue` calls `api.ts`. The local
+Express route or the Worker route validates JSON with Zod. `createFragment`
+normalises the optional title, assigns an ID and timestamps, then asks the selected
+repository adapter to insert it. The created fragment returns as JSON with HTTP 201
+and the Vue page reloads the selected day's chronological list.
 
 `GET /fragments?date=YYYY-MM-DD` filters on the ISO creation date and sorts ascending. ISO timestamps make the current ordering unambiguous. The browser selects dates in its local timezone; the current MVP stores timestamps in UTC, so entries made around midnight may appear under their UTC day. This is a known product decision to revisit once timezone semantics are specified.
 
@@ -45,11 +58,20 @@ Malformed request data receives 400, missing fragments receive 404, and unexpect
 
 ## Persistence
 
-The single `fragments` table stores an opaque UUID, nullable title, content, source, and ISO timestamps. `source` is constrained to `text`; voice is deliberately outside this MVP. The API creates the schema and an index for chronological lookups at startup. Data is in `apps/api/data/fragments.sqlite` and survives process restarts.
+The versioned schema includes `users`, `sessions` and `fragments`; `fragments.user_id`
+is nullable until the authentication iteration assigns ownership. `source` is
+constrained to `text`; voice is deliberately outside this MVP. Local migrations are
+applied through `apps/api/src/infrastructure/sqlite-migrations.ts`. D1 migrations
+live in `apps/worker/migrations` and are applied with Wrangler. Local data is not
+implicitly copied to D1; migration is an explicit export/import operation.
 
 ## External dependencies
 
-Vue and Vite provide the browser UI. Express exposes the API. Zod owns the API boundary validation. `better-sqlite3` provides synchronous, prepared SQLite statements. This is appropriate for a small, local MVP; a future hosted, multi-user version should reassess the database connection and concurrency model.
+Vue and Vite provide the browser UI. Express exposes the local API. The Worker
+exposes the remote API and serves the built assets. Zod owns API boundary
+validation. `better-sqlite3` provides local synchronous prepared statements, while
+D1 provides asynchronous prepared statements through `env.DB`. Both adapters
+implement the same async repository contract.
 
 ## Testing strategy
 

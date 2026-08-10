@@ -22,7 +22,7 @@ An important long-term personal use is collecting memories and reflections about
 - **AI assists invisibly.** Future AI should preserve the author's voice; it must not invent or aggressively reinterpret content.
 - **Learn through the code.** Architecture, decisions, and trade-offs are part of the product documentation.
 
-## Current status — Iteration 1 complete locally
+## Current status — Iteration 1 complete locally and remotely
 
 The local MVP supports the complete text-fragment workflow:
 
@@ -33,28 +33,47 @@ The local MVP supports the complete text-fragment workflow:
 - Edit and delete fragments.
 - Clear the main writing form after a successful save.
 - Run API tests, type checks, and production builds.
+- Run the same fragment workflow remotely through Cloudflare Workers + D1.
+- Serve the Vue application and API from the same remote origin.
+
+The current remote technical preview is:
+
+`https://fragments.jlaguigom-ai.workers.dev`
+
+It is intentionally not considered private yet: authentication, sessions and
+resource ownership are the next iteration. Only test content should be entered.
 
 ### Current implementation
 
 | Area | Current choice |
 | --- | --- |
 | Web | Vue 3, TypeScript, Vite, Composition API |
-| API | Node.js, Express, TypeScript |
-| Persistence | SQLite via `better-sqlite3` |
+| API | Node.js/Express locally; Cloudflare Worker remotely |
+| Persistence | SQLite via `better-sqlite3` locally; Cloudflare D1 remotely |
 | Validation | Zod at the API boundary |
 | Repository | npm workspaces monorepo |
+| Local database | SQLite file at `apps/api/data/fragments.sqlite` |
+| Remote runtime | Cloudflare Worker serving Vue assets and `/api/*` |
+| Remote database | Cloudflare D1 database `fragments` |
 | Main branch | `master` |
 | GitHub repository | `https://github.com/jlaguilargomez/fragments` |
 
-The local web application runs on port `5173`; its API runs on port `3001`. Port `3000` is deliberately avoided because it is occupied by another local service in this environment.
+The local web application runs on port `5173`; its API runs on port `3001`. Port `3000` is deliberately avoided because it is occupied by another local service in this environment. The remote application is served by a same-origin Cloudflare Worker with D1.
 
-### Published visual demo
+### Published environments
 
 A GitHub Actions workflow prepares a **visual-only demo** for GitHub Pages. It uses sample fragments and keeps edits only for the active browser session, because GitHub Pages cannot run the Express API or persist SQLite data.
 
 Before the workflow can deploy, GitHub Pages must be enabled in the repository settings and configured to use **GitHub Actions** as its source. Expected URL once enabled:
 
 `https://jlaguilargomez.github.io/fragments/`
+
+The functional remote preview is deployed separately with Wrangler to:
+
+`https://fragments.jlaguigom-ai.workers.dev`
+
+It serves the compiled Vue assets and the Worker API. D1 migrations are applied
+explicitly with `npm run db:migrate:remote -w @fragments/worker`.
 
 ## Deliberate non-goals for the current MVP
 
@@ -71,20 +90,20 @@ Avoid placeholder code and abstractions for these features until an iteration ne
 
 ## Architecture guardrails
 
-- Keep the monorepo simple: `apps/web`, `apps/api`, and `packages/shared`.
+- Keep the monorepo simple: `apps/web`, `apps/api`, `apps/worker`, `packages/server-core`, and `packages/shared`.
 - Prefer small functions and components, strict TypeScript, explicit naming, and runtime validation.
-- Keep transport concerns in Express routes; keep use cases separate from SQLite queries.
+- Keep transport concerns in Express or Worker routes; keep use cases separate from database queries.
 - Do not add microservices, CQRS, event sourcing, generic repository frameworks, or dependency-injection containers.
 - Use abstractions only when a present problem justifies them.
 - If AI is added, keep providers behind a small application-facing interface, but do not create it before it is needed.
 
-See [architecture.md](architecture.md) and the ADRs in [decisions](decisions) for the current technical rationale.
+See [architecture.md](architecture.md) and the ADRs in [decisions](decisions) for the current technical rationale. The Worker deployment instructions are in the repository README.
 
 ## Roadmap
 
 | Iteration | Outcome | Status |
 | --- | --- | --- |
-| 1. Core text fragments | Capture, persist, read, edit, and delete text fragments. | Complete locally |
+| 1. Core text fragments | Capture, persist, read, edit, and delete text fragments. | Complete locally and remotely |
 | 2. Authentication and users | Private accounts, sessions, and resource ownership. | Next major iteration |
 | 3. Voice capture | Record audio and convert it to text. | Planned |
 | 4. AI enrichment | Optional transcription cleanup and title suggestions that preserve voice. | Planned |
@@ -97,9 +116,11 @@ This roadmap is intentionally flexible. Change it based on real use of the app a
 
 The next implementation conversation should normally start **Iteration 2: authentication and users**. Before coding, decide:
 
-1. The hosting target for the production API and database.
-2. The authentication approach (session cookies versus tokens) based on that target.
-3. The minimum user experience: sign-up, sign-in, and one user's isolated fragments.
+1. Implement local users and authentication against SQLite and D1.
+2. Use server-side sessions with `HttpOnly` cookies shared by the same-origin Worker.
+3. Associate every fragment with a user and enforce ownership in every repository query.
+4. Provide sign-up, sign-in, session restoration and sign-out.
+5. Add learning notes on authentication versus authorization, session cookies versus tokens, and resource ownership.
 
 As part of Iteration 2, create learning notes on authentication versus authorization, session cookies versus tokens, and resource ownership before or alongside the implementation.
 

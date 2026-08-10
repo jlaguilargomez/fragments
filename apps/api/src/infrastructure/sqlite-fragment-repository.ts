@@ -1,5 +1,6 @@
 import Database from 'better-sqlite3';
-import type { FragmentRepository, StoredFragment } from '../domain/fragment.js';
+import type { FragmentRepository, StoredFragment } from '@fragments/server-core';
+import { applySqliteMigrations } from './sqlite-migrations.js';
 
 type FragmentRow = {
   id: string; title: string | null; content: string; source: 'text'; created_at: string; updated_at: string;
@@ -19,6 +20,7 @@ export function createSqliteFragmentRepository(filename: string): FragmentReposi
     );
     CREATE INDEX IF NOT EXISTS fragments_created_at_idx ON fragments(created_at);
   `);
+  applySqliteMigrations(database);
 
   const toFragment = (row: FragmentRow): StoredFragment => ({
     id: row.id, title: row.title, content: row.content, source: row.source,
@@ -35,12 +37,10 @@ export function createSqliteFragmentRepository(filename: string): FragmentReposi
   const remove = database.prepare('DELETE FROM fragments WHERE id = ?');
 
   return {
-    create(fragment) { insert.run(fragment); return fragment; },
-    findById(id) { const row = selectById.get(id) as FragmentRow | undefined; return row && toFragment(row); },
-    findByDate(date) { return (selectByDate.all(date) as FragmentRow[]).map(toFragment); },
-    update(fragment) {
-      return update.run(fragment).changes === 1 ? fragment : undefined;
-    },
-    delete(id) { return remove.run(id).changes === 1; }
+    async create(fragment) { insert.run(fragment); return fragment; },
+    async findById(id) { const row = selectById.get(id) as FragmentRow | undefined; return row && toFragment(row); },
+    async findByDate(date) { return (selectByDate.all(date) as FragmentRow[]).map(toFragment); },
+    async update(fragment) { return update.run(fragment).changes === 1 ? fragment : undefined; },
+    async delete(id) { return remove.run(id).changes === 1; }
   };
 }

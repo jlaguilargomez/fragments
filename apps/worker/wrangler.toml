@@ -1,0 +1,13 @@
+name = "fragments"
+main = "src/index.ts"
+compatibility_date = "2026-08-10"
+
+[assets]
+directory = "../web/dist"
+binding = "ASSETS"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "fragments"
+database_id = "021ba970-a8cb-45ee-b7e1-0f3592bddbf8"
+migrations_dir = "migrations"

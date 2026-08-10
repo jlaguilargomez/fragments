@@ -1,0 +1,9 @@
+{
+  "name": "@fragments/server-core",
+  "private": true,
+  "type": "module",
+  "exports": "./src/index.ts",
+  "dependencies": {
+    "@fragments/shared": "*"
+  }
+}
