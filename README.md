@@ -33,6 +33,8 @@ npm test
 
 See [the architecture documentation](docs/architecture.md) for the request flow, choices, and testing approach.
 
+Start future work with the [project plan and shared context](docs/project-plan.md).
+
 ## Visual demo on GitHub Pages
 
 Pushing `master` builds a static visual demo through GitHub Actions. The Pages version uses sample fragments and keeps any edits only for the current browser session; it does not include the Express API or persistent SQLite database.
