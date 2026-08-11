@@ -23,7 +23,7 @@ async function load() {
 }
 async function save(input: { title: string; content: string }): Promise<boolean> {
   try {
-    await fragmentsApi.create(input);
+    await fragmentsApi.create({ ...input, date: selectedDate.value });
     await load();
     return true;
   } catch (caught) {

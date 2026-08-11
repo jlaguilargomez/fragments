@@ -15,6 +15,7 @@ export interface AuthCredentials { email: string; password: string; }
 export interface CreateFragmentInput {
   title?: string | null;
   content: string;
+  date: string;
 }
 
 export interface UpdateFragmentInput {

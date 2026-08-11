@@ -13,16 +13,27 @@ describe('Fragments API', () => {
 
   it('creates and lists a fragment for its day', async () => {
     const api = app(); const cookie = await authenticated(api);
-    const created = await request(api).post('/fragments').set('Cookie', cookie).send({ title: 'A thought', content: 'Something worth keeping.' }).expect(201);
+    const created = await request(api).post('/fragments').set('Cookie', cookie).send({ title: 'A thought', content: 'Something worth keeping.', date: new Date().toISOString().slice(0, 10) }).expect(201);
     const date = created.body.createdAt.slice(0, 10);
     const listed = await request(api).get(`/fragments?date=${date}`).set('Cookie', cookie).expect(200);
     expect(listed.body).toHaveLength(1); expect(listed.body[0].id).toBe(created.body.id);
   });
 
+  it('creates a fragment for the selected day instead of the current day', async () => {
+    const api = app(); const cookie = await authenticated(api);
+    const selectedDate = '2026-01-15';
+    const created = await request(api).post('/fragments').set('Cookie', cookie)
+      .send({ content: 'A backdated thought.', date: selectedDate }).expect(201);
+
+    expect(created.body.createdAt.slice(0, 10)).toBe(selectedDate);
+    expect((await request(api).get(`/fragments?date=${selectedDate}`).set('Cookie', cookie)).body).toHaveLength(1);
+    expect((await request(api).get(`/fragments?date=${new Date().toISOString().slice(0, 10)}`).set('Cookie', cookie)).body).toHaveLength(0);
+  });
+
   it('requires authentication and isolates fragments by user', async () => {
     const api = app(); const first = await authenticated(api); const second = await authenticated(api, 'two@example.com');
     await request(api).get('/fragments?date=2026-01-01').expect(401);
-    const created = await request(api).post('/fragments').set('Cookie', first).send({ content: 'Private thought.' }).expect(201);
+    const created = await request(api).post('/fragments').set('Cookie', first).send({ content: 'Private thought.', date: new Date().toISOString().slice(0, 10) }).expect(201);
     await request(api).get(`/fragments/${created.body.id}`).set('Cookie', second).expect(404);
     await request(api).patch(`/fragments/${created.body.id}`).set('Cookie', second).send({ content: 'No access.' }).expect(404);
     await request(api).delete(`/fragments/${created.body.id}`).set('Cookie', second).expect(404);

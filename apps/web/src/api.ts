@@ -30,7 +30,7 @@ const demoApi = {
   list(date: string) { return Promise.resolve(date === today() ? [...demoFragments] : []); },
   create(input: CreateFragmentInput) {
     const now = new Date().toISOString();
-    const fragment: Fragment = { id: crypto.randomUUID(), title: input.title?.trim() || null, content: input.content.trim(), source: 'text', createdAt: now, updatedAt: now };
+    const fragment: Fragment = { id: crypto.randomUUID(), title: input.title?.trim() || null, content: input.content.trim(), source: 'text', createdAt: `${input.date}T${now.slice(11)}`, updatedAt: now };
     demoFragments.push(fragment);
     return Promise.resolve(fragment);
   },

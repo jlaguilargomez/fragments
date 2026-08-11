@@ -28,12 +28,13 @@ export class FragmentNotFoundError extends Error {
 
 export function createFragment(repository: FragmentRepository, userId: string, input: CreateFragmentInput): Promise<StoredFragment> {
   const now = new Date().toISOString();
+  const createdAt = `${input.date}T${now.slice(11)}`;
   return repository.create({
     id: crypto.randomUUID(), userId,
     title: normaliseTitle(input.title),
     content: input.content.trim(),
     source: 'text',
-    createdAt: now,
+    createdAt,
     updatedAt: now
   });
 }

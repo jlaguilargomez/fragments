@@ -4,7 +4,7 @@ import { createFragment, deleteFragment, FragmentNotFoundError, getFragment, get
 import type { FragmentRepository } from '../domain/fragment.js';
 
 const dateSchema = z.iso.date();
-const createSchema = z.object({ title: z.string().max(200).nullable().optional(), content: z.string().trim().min(1).max(20_000) });
+const createSchema = z.object({ title: z.string().max(200).nullable().optional(), content: z.string().trim().min(1).max(20_000), date: z.iso.date() });
 const updateSchema = z.object({ title: z.string().max(200).nullable().optional(), content: z.string().trim().min(1).max(20_000).optional() }).refine(value => value.title !== undefined || value.content !== undefined, 'At least one field is required');
 
 export function createFragmentsRouter(repository: FragmentRepository, requireUser: (request: { headers: { cookie?: string } }) => Promise<{ id: string }>): Router {
