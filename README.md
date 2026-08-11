@@ -4,17 +4,20 @@ A calm, private-by-default digital notebook for capturing thoughts before organi
 
 ## Current status
 
-The text-fragment MVP works locally and is also deployed as a remote technical
-preview on Cloudflare:
+The authenticated text-fragment MVP works locally and is deployed as a remote
+technical preview on Cloudflare:
 
 - Production preview: [fragments.jlaguigom-ai.workers.dev](https://fragments.jlaguigom-ai.workers.dev)
 - Health check: `/api/health`
 - Remote runtime: Cloudflare Worker
 - Remote database: Cloudflare D1
+- Authentication: local accounts with 30-day HttpOnly session cookies
+- Ownership: every fragment is scoped to its authenticated user
 
-Authentication is not implemented yet. The remote preview is therefore public and
-should only be used with test content. The next product iteration is users,
-authentication, sessions and fragment ownership.
+Authentication is implemented with local accounts, server-side sessions and
+fragment ownership. Email verification and password recovery are not included yet.
+Passwords use PBKDF2-HMAC-SHA256 with 100,000 iterations, the highest count
+accepted by the current Cloudflare Workers Web Crypto runtime.
 
 ## Requirements
 
@@ -56,6 +59,26 @@ secret. Do not commit API tokens or other credentials.
 Use `npm run db:migrate:local -w @fragments/worker` and `npm run dev -w @fragments/worker`
 to exercise the Worker and a local D1 database. The local Express API remains the
 fastest development path and uses `apps/api/data/fragments.sqlite`.
+
+For test environments, remove only anonymous content without recreating the
+database:
+
+```sql
+DELETE FROM fragments WHERE user_id IS NULL;
+```
+
+To completely reset one test account, replace `TU_EMAIL` and run the following
+against the remote D1 database. This removes its sessions, fragments and account:
+
+```bash
+npx wrangler d1 execute fragments --remote --command \
+"DELETE FROM sessions WHERE user_id IN (SELECT id FROM users WHERE email = 'TU_EMAIL');
+ DELETE FROM fragments WHERE user_id IN (SELECT id FROM users WHERE email = 'TU_EMAIL');
+ DELETE FROM users WHERE email = 'TU_EMAIL';"
+```
+
+This operation is irreversible and should never be used for a real account without
+an explicit backup or confirmation.
 
 ## Structure
 

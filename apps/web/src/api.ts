@@ -1,4 +1,4 @@
-import type { CreateFragmentInput, Fragment, UpdateFragmentInput } from '@fragments/shared';
+import type { AuthCredentials, AuthSession, CreateFragmentInput, Fragment, UpdateFragmentInput } from '@fragments/shared';
 
 const baseUrl = import.meta.env.VITE_API_URL ?? (import.meta.env.DEV ? 'http://localhost:3001' : '');
 export const isVisualDemo = import.meta.env.VITE_VISUAL_DEMO === 'true';
@@ -66,6 +66,14 @@ const liveApi = {
   remove(id: string) { return request<void>(`${baseUrl ? '/fragments' : '/api/fragments'}/${id}`, { method: 'DELETE' }); }
 };
 
+const authApi = {
+  session() { return request<AuthSession | null>(baseUrl ? '/auth/session' : '/api/auth/session'); },
+  signup(input: AuthCredentials) { return request<AuthSession>(baseUrl ? '/auth/signup' : '/api/auth/signup', { method: 'POST', body: JSON.stringify(input) }); },
+  login(input: AuthCredentials) { return request<AuthSession>(baseUrl ? '/auth/login' : '/api/auth/login', { method: 'POST', body: JSON.stringify(input) }); },
+  logout() { return request<void>(baseUrl ? '/auth/logout' : '/api/auth/logout', { method: 'POST' }); }
+};
+
 // GitHub Pages can only host static files. Its demo keeps interactions useful
 // in the current tab, without pretending that entries are durably stored.
 export const fragmentsApi = isVisualDemo ? demoApi : liveApi;
+export { authApi };

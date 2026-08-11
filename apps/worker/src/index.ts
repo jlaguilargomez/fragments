@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { createFragment, deleteFragment, FragmentNotFoundError, getFragment, getFragmentsForDate, updateFragment } from '@fragments/server-core';
-import type { FragmentRepository, StoredFragment } from '@fragments/server-core';
+import { createFragment, deleteFragment, FragmentNotFoundError, getFragment, getFragmentsForDate, getSession, InvalidCredentialsError, login, logout, signUp, updateFragment } from '@fragments/server-core';
+import type { AuthRepository, FragmentRepository, StoredFragment, StoredSession, StoredUser } from '@fragments/server-core';
 
 export interface Env {
   DB: D1Database;
@@ -8,47 +8,57 @@ export interface Env {
 }
 
 type FragmentRow = {
-  id: string; title: string | null; content: string; source: 'text'; created_at: string; updated_at: string;
+  id: string; user_id: string; title: string | null; content: string; source: 'text'; created_at: string; updated_at: string;
 };
+type UserRow = { id: string; email: string; password_hash: string; created_at: string; updated_at: string };
+type SessionRow = { id: string; user_id: string; token_hash: string; expires_at: string; revoked_at: string | null; created_at: string };
 
-function createD1FragmentRepository(database: D1Database): FragmentRepository {
+function createD1FragmentRepository(database: D1Database): FragmentRepository & AuthRepository {
   const toFragment = (row: FragmentRow): StoredFragment => ({
-    id: row.id, title: row.title, content: row.content, source: row.source,
+    id: row.id, userId: row.user_id, title: row.title, content: row.content, source: row.source,
     createdAt: row.created_at, updatedAt: row.updated_at
   });
   return {
     async create(fragment) {
       await database.prepare(`INSERT INTO fragments
-        (id, title, content, source, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?)`)
-        .bind(fragment.id, fragment.title, fragment.content, fragment.source, fragment.createdAt, fragment.updatedAt)
+        (id, user_id, title, content, source, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?)`)
+        .bind(fragment.id, fragment.userId, fragment.title, fragment.content, fragment.source, fragment.createdAt, fragment.updatedAt)
         .run();
       return fragment;
     },
-    async findById(id) {
-      const result = await database.prepare('SELECT * FROM fragments WHERE id = ?').bind(id).first<FragmentRow>();
+    async findById(userId, id) {
+      const result = await database.prepare('SELECT * FROM fragments WHERE user_id = ? AND id = ?').bind(userId, id).first<FragmentRow>();
       return result ? toFragment(result) : undefined;
     },
-    async findByDate(date) {
+    async findByDate(userId, date) {
       const result = await database.prepare(`SELECT * FROM fragments
-        WHERE substr(created_at, 1, 10) = ? ORDER BY created_at ASC`).bind(date).all<FragmentRow>();
+        WHERE user_id = ? AND substr(created_at, 1, 10) = ? ORDER BY created_at ASC`).bind(userId, date).all<FragmentRow>();
       return result.results.map(toFragment);
     },
-    async update(fragment) {
+    async update(userId, fragment) {
       const result = await database.prepare(`UPDATE fragments SET title = ?, content = ?, updated_at = ?
-        WHERE id = ?`).bind(fragment.title, fragment.content, fragment.updatedAt, fragment.id).run();
+        WHERE user_id = ? AND id = ?`).bind(fragment.title, fragment.content, fragment.updatedAt, userId, fragment.id).run();
       return result.meta.changes === 1 ? fragment : undefined;
     },
-    async delete(id) {
-      const result = await database.prepare('DELETE FROM fragments WHERE id = ?').bind(id).run();
+    async delete(userId, id) {
+      const result = await database.prepare('DELETE FROM fragments WHERE user_id = ? AND id = ?').bind(userId, id).run();
       return result.meta.changes === 1;
-    }
+    },
+    async findUserByEmail(email) { const row = await database.prepare('SELECT * FROM users WHERE email = ?').bind(email).first<UserRow>(); return row ? { id: row.id, email: row.email, passwordHash: row.password_hash, createdAt: row.created_at, updatedAt: row.updated_at } : undefined; },
+    async findUserById(id) { const row = await database.prepare('SELECT * FROM users WHERE id = ?').bind(id).first<UserRow>(); return row ? { id: row.id, email: row.email, passwordHash: row.password_hash, createdAt: row.created_at, updatedAt: row.updated_at } : undefined; },
+    async createUser(user: StoredUser) { await database.prepare('INSERT INTO users (id, email, password_hash, auth_provider, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)').bind(user.id, user.email, user.passwordHash, 'local', user.createdAt, user.updatedAt).run(); return user; },
+    async createSession(session: StoredSession) { await database.prepare('INSERT INTO sessions (id, user_id, token_hash, expires_at, revoked_at, created_at) VALUES (?, ?, ?, ?, ?, ?)').bind(session.id, session.userId, session.tokenHash, session.expiresAt, session.revokedAt, session.createdAt).run(); return session; },
+    async findSessionByTokenHash(tokenHash) { const row = await database.prepare('SELECT * FROM sessions WHERE token_hash = ?').bind(tokenHash).first<SessionRow>(); return row ? { id: row.id, userId: row.user_id, tokenHash: row.token_hash, expiresAt: row.expires_at, revokedAt: row.revoked_at, createdAt: row.created_at } : undefined; },
+    async revokeSession(id, revokedAt) { await database.prepare('UPDATE sessions SET revoked_at = ? WHERE id = ?').bind(revokedAt, id).run(); }
   };
 }
 
 const dateSchema = z.iso.date();
 const createSchema = z.object({ title: z.string().max(200).nullable().optional(), content: z.string().trim().min(1).max(20_000) });
 const updateSchema = z.object({ title: z.string().max(200).nullable().optional(), content: z.string().trim().min(1).max(20_000).optional() }).refine(value => value.title !== undefined || value.content !== undefined, 'At least one field is required');
+const credentialsSchema = z.object({ email: z.string().email(), password: z.string().min(12) });
+const COOKIE = 'fragments_session';
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
@@ -57,25 +67,38 @@ function json(body: unknown, status = 200): Response {
 async function handleApi(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url);
   if (url.pathname === '/api/health' && request.method === 'GET') return json({ status: 'ok' });
-  if (!url.pathname.startsWith('/api/fragments')) return json({ error: 'Not found' }, 404);
+  if (!url.pathname.startsWith('/api/fragments') && !url.pathname.startsWith('/api/auth')) return json({ error: 'Not found' }, 404);
 
   const repository = createD1FragmentRepository(env.DB);
   try {
+    if (url.pathname === '/api/auth/signup' && request.method === 'POST') { const result = await signUp(repository, credentialsSchema.parse(await request.json())); return withCookie(json(result.session, 201), result.token); }
+    if (url.pathname === '/api/auth/login' && request.method === 'POST') { const result = await login(repository, credentialsSchema.parse(await request.json())); return withCookie(json(result.session), result.token); }
+    if (url.pathname === '/api/auth/session' && request.method === 'GET') { const session = await getSession(repository, cookieFrom(request)); return json(session ?? null); }
+    if (url.pathname === '/api/auth/logout' && request.method === 'POST') { await logout(repository, cookieFrom(request)); return clearCookie(new Response(null, { status: 204 })); }
     const suffix = url.pathname.slice('/api/fragments'.length);
-    if (suffix === '' && request.method === 'POST') return json(await createFragment(repository, createSchema.parse(await request.json())), 201);
-    if (suffix === '' && request.method === 'GET') return json(await getFragmentsForDate(repository, dateSchema.parse(url.searchParams.get('date'))));
+    const session = await getSession(repository, cookieFrom(request));
+    if (!session) return json({ error: 'Authentication required' }, 401);
+    if (suffix === '' && request.method === 'POST') return json(await createFragment(repository, session.user.id, createSchema.parse(await request.json())), 201);
+    if (suffix === '' && request.method === 'GET') return json(await getFragmentsForDate(repository, session.user.id, dateSchema.parse(url.searchParams.get('date'))));
     const id = suffix.slice(1);
     if (!id || id.includes('/')) return json({ error: 'Not found' }, 404);
-    if (request.method === 'GET') return json(await getFragment(repository, id));
-    if (request.method === 'PATCH') return json(await updateFragment(repository, id, updateSchema.parse(await request.json())));
-    if (request.method === 'DELETE') { await deleteFragment(repository, id); return new Response(null, { status: 204 }); }
+    if (request.method === 'GET') return json(await getFragment(repository, session.user.id, id));
+    if (request.method === 'PATCH') return json(await updateFragment(repository, session.user.id, id, updateSchema.parse(await request.json())));
+    if (request.method === 'DELETE') { await deleteFragment(repository, session.user.id, id); return new Response(null, { status: 204 }); }
     return json({ error: 'Method not allowed' }, 405);
   } catch (error) {
     if (error instanceof z.ZodError) return json({ error: 'Invalid request', details: error.issues }, 400);
     if (error instanceof FragmentNotFoundError) return json({ error: error.message }, 404);
+    if (error instanceof InvalidCredentialsError) return json({ error: error.message }, 401);
+    if (isUniqueError(error)) return json({ error: 'An account with that email already exists' }, 409);
     return json({ error: 'Internal server error' }, 500);
   }
 }
+
+function cookieFrom(request: Request): string | undefined { return request.headers.get('Cookie')?.split(';').map(value => value.trim()).find(value => value.startsWith(`${COOKIE}=`))?.slice(COOKIE.length + 1); }
+function withCookie(response: Response, token: string): Response { response.headers.append('Set-Cookie', `${COOKIE}=${token}; Max-Age=2592000; Path=/; HttpOnly; SameSite=Lax; Secure`); return response; }
+function clearCookie(response: Response): Response { response.headers.append('Set-Cookie', `${COOKIE}=; Max-Age=0; Path=/; HttpOnly; SameSite=Lax; Secure`); return response; }
+function isUniqueError(error: unknown): boolean { return error instanceof Error && /unique|constraint/i.test(error.message); }
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {

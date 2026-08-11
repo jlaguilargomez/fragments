@@ -1,16 +1,21 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue';
 import type { Fragment } from '@fragments/shared';
-import { fragmentsApi, isVisualDemo } from './api';
+import { authApi, fragmentsApi, isVisualDemo } from './api';
+import type { AuthSession } from '@fragments/shared';
 import { displayDate, shiftDate, toDateKey } from './date';
 import FragmentComposer from './components/FragmentComposer.vue';
 import FragmentEntry from './components/FragmentEntry.vue';
+import AuthPanel from './components/AuthPanel.vue';
 
 const selectedDate = ref(toDateKey(new Date()));
 const fragments = ref<Fragment[]>([]);
 const loading = ref(false);
 const error = ref('');
+const session = ref<AuthSession | null>(null);
+const checkingSession = ref(!isVisualDemo);
 async function load() {
+  if (!isVisualDemo && !session.value) return;
   loading.value = true; error.value = '';
   try { fragments.value = await fragmentsApi.list(selectedDate.value); }
   catch (caught) { error.value = caught instanceof Error ? caught.message : 'Could not load your fragments.'; }
@@ -34,14 +39,16 @@ async function remove(id: string) {
   try { await fragmentsApi.remove(id); await load(); } catch (caught) { error.value = caught instanceof Error ? caught.message : 'Could not delete your fragment.'; }
 }
 watch(selectedDate, load);
-onMounted(load);
+onMounted(async () => { if (isVisualDemo) { await load(); return; } try { session.value = await authApi.session(); } catch { session.value = null; } finally { checkingSession.value = false; if (session.value) await load(); } });
+async function signOut() { await authApi.logout(); session.value = null; fragments.value = []; }
 </script>
 
 <template>
-  <main class="workspace">
+  <AuthPanel v-if="!isVisualDemo && !checkingSession && !session" @authenticated="session = $event; load()" />
+  <main v-else class="workspace">
     <header class="topbar">
       <div class="brand"><span class="brand-mark" aria-hidden="true">✦</span><span>Fragments</span></div>
-      <p>{{ isVisualDemo ? 'Visual demo · changes are temporary' : 'Private notebook' }}</p>
+      <p>{{ isVisualDemo ? 'Visual demo · changes are temporary' : session?.user.email }} <button v-if="session" class="text-button" @click="signOut">Sign out</button></p>
     </header>
     <div class="page">
       <section class="page-heading">

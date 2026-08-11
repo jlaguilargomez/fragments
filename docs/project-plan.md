@@ -22,7 +22,7 @@ An important long-term personal use is collecting memories and reflections about
 - **AI assists invisibly.** Future AI should preserve the author's voice; it must not invent or aggressively reinterpret content.
 - **Learn through the code.** Architecture, decisions, and trade-offs are part of the product documentation.
 
-## Current status — Iteration 1 complete locally and remotely
+## Current status — Iteration 2 complete locally, remotely, and in production preview
 
 The local MVP supports the complete text-fragment workflow:
 
@@ -35,13 +35,17 @@ The local MVP supports the complete text-fragment workflow:
 - Run API tests, type checks, and production builds.
 - Run the same fragment workflow remotely through Cloudflare Workers + D1.
 - Serve the Vue application and API from the same remote origin.
+- Register, sign in, restore and revoke server-side sessions with HttpOnly cookies.
+- Associate fragment reads and writes with the authenticated user.
+- Reset individual test accounts directly in D1 without recreating the database.
 
 The current remote technical preview is:
 
 `https://fragments.jlaguigom-ai.workers.dev`
 
-It is intentionally not considered private yet: authentication, sessions and
-resource ownership are the next iteration. Only test content should be entered.
+It is a technical preview. Authentication and ownership are active, but email
+verification and password recovery are not implemented. Only test content should
+be entered.
 
 ### Current implementation
 
@@ -51,6 +55,8 @@ resource ownership are the next iteration. Only test content should be entered.
 | API | Node.js/Express locally; Cloudflare Worker remotely |
 | Persistence | SQLite via `better-sqlite3` locally; Cloudflare D1 remotely |
 | Validation | Zod at the API boundary |
+| Password storage | PBKDF2-HMAC-SHA256, 100,000 iterations, shared by Node and Workers |
+| Sessions | Server-side records, token digest in D1/SQLite, 30-day HttpOnly cookie |
 | Repository | npm workspaces monorepo |
 | Local database | SQLite file at `apps/api/data/fragments.sqlite` |
 | Remote runtime | Cloudflare Worker serving Vue assets and `/api/*` |
@@ -75,11 +81,11 @@ The functional remote preview is deployed separately with Wrangler to:
 It serves the compiled Vue assets and the Worker API. D1 migrations are applied
 explicitly with `npm run db:migrate:remote -w @fragments/worker`.
 
-## Deliberate non-goals for the current MVP
+## Deliberate non-goals for the current product
 
-Do **not** add these to Iteration 1:
+Do **not** add these yet:
 
-- Authentication, users, or authorisation.
+- Email verification and password recovery.
 - Voice recording or speech-to-text.
 - OpenAI, OpenRouter, LLMs, or AI title generation.
 - Contexts, tags, folders, or hierarchical organisation.
@@ -104,7 +110,7 @@ See [architecture.md](architecture.md) and the ADRs in [decisions](decisions) fo
 | Iteration | Outcome | Status |
 | --- | --- | --- |
 | 1. Core text fragments | Capture, persist, read, edit, and delete text fragments. | Complete locally and remotely |
-| 2. Authentication and users | Private accounts, sessions, and resource ownership. | Next major iteration |
+| 2. Authentication and users | Private accounts, sessions, and resource ownership. | Complete locally and remotely |
 | 3. Voice capture | Record audio and convert it to text. | Planned |
 | 4. AI enrichment | Optional transcription cleanup and title suggestions that preserve voice. | Planned |
 | 5. Contexts | Many-to-many, non-hierarchical contexts such as Marco, Work, and Books. | Planned |
@@ -114,15 +120,9 @@ This roadmap is intentionally flexible. Change it based on real use of the app a
 
 ## Recommended next conversation
 
-The next implementation conversation should normally start **Iteration 2: authentication and users**. Before coding, decide:
-
-1. Implement local users and authentication against SQLite and D1.
-2. Use server-side sessions with `HttpOnly` cookies shared by the same-origin Worker.
-3. Associate every fragment with a user and enforce ownership in every repository query.
-4. Provide sign-up, sign-in, session restoration and sign-out.
-5. Add learning notes on authentication versus authorization, session cookies versus tokens, and resource ownership.
-
-As part of Iteration 2, create learning notes on authentication versus authorization, session cookies versus tokens, and resource ownership before or alongside the implementation.
+The next useful product step is to decide whether test-account reset should remain a
+documented D1 operation or become a user-facing “delete account” flow. After that,
+the roadmap continues with voice capture.
 
 ## How to use this document in future conversations
 
