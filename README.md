@@ -14,6 +14,7 @@ remote technical preview on Cloudflare:
 - Authentication: local accounts with 30-day HttpOnly session cookies
 - Ownership: every fragment is scoped to its authenticated user
 - UI: responsive Vue interface with balanced type scale, compact writing flow and branded SVG icon
+- Help: a responsive in-app help screen covering usage, current capabilities, limitations and roadmap
 - Voice capture: browser `MediaRecorder`, synchronous Workers AI Whisper transcription, temporary audio only
 - Latest deployment: commit `e5bc260` deployed to Cloudflare Workers
 
@@ -38,6 +39,9 @@ Open the Vite URL printed by `npm run dev` (normally `http://localhost:5173`). T
 API runs on port 3001 and creates its durable SQLite database at
 `apps/api/data/fragments.sqlite`. In local development, Vite proxies `/auth` and
 `/fragments` to Express; the local API does not provide Workers AI transcription.
+The Help screen is available from the top bar after signing in. To inspect the
+interface without an account, run `VITE_VISUAL_DEMO=true npm run dev -w
+@fragments/web -- --host 127.0.0.1`.
 
 ## Useful commands
 

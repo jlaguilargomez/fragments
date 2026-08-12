@@ -41,6 +41,8 @@ The local MVP supports the complete text-fragment workflow:
 - Apply a UI/UX refinement pass with a consistent type scale, shared content alignment,
   a more compact editor, responsive mobile spacing, and the branded SVG icon in the
   application shell and authentication screen.
+- Add a minimal Help screen in the application shell with usage guidance, current
+  capabilities, known limitations, privacy notes, and an undated proposed roadmap.
 - Verify the complete local flow for create, edit, delete, and day navigation before
   publishing the latest production preview.
 - Record short voice notes in browsers with `MediaRecorder`.
@@ -132,6 +134,7 @@ See [architecture.md](architecture.md) and the ADRs in [decisions](decisions) fo
 | 1. Core text fragments | Capture, persist, read, edit, and delete text fragments. | Complete locally and remotely |
 | 2. Authentication, users, and interface refinement | Private accounts, sessions, resource ownership, and the first responsive visual system. | Complete locally and remotely |
 | 3. Voice capture | Record audio and convert it to text. | Complete locally and remotely |
+| 3a. Help and product guidance | Explain the current workflow, capabilities, limitations, privacy notes, and proposed future direction. | Complete locally and remotely |
 | 4. AI enrichment | Optional transcription cleanup and title suggestions that preserve voice. | Planned |
 | 5. Contexts | Many-to-many, non-hierarchical contexts such as Marco, Work, and Books. | Planned |
 | 6+. Discovery and composition | Semantic search, links, book/document generation, and experiments. | Future |

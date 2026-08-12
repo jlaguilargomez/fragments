@@ -13,6 +13,7 @@ const fragments = ref<Fragment[]>([]);
 const loading = ref(false);
 const error = ref('');
 const session = ref<AuthSession | null>(null);
+const activeView = ref<'fragments' | 'help'>('fragments');
 const checkingSession = ref(!isVisualDemo);
 const assetBase = import.meta.env.BASE_URL;
 async function load() {
@@ -53,9 +54,64 @@ async function signOut() { await authApi.logout(); session.value = null; fragmen
   <main v-else class="workspace">
     <header class="topbar">
       <div class="brand"><img class="brand-mark" :src="`${assetBase}icon.svg`" alt="" /><span>Fragments</span></div>
-      <div class="account-area"><span>{{ isVisualDemo ? 'Visual demo · changes are temporary' : session?.user.email }}</span><span v-if="session" class="account-divider" aria-hidden="true"></span><button v-if="session" class="text-button" @click="signOut">Sign out</button></div>
+      <div class="account-area"><span>{{ isVisualDemo ? 'Visual demo · changes are temporary' : session?.user.email }}</span><span class="account-divider" aria-hidden="true"></span><button class="text-button" @click="activeView = activeView === 'help' ? 'fragments' : 'help'">{{ activeView === 'help' ? 'Back to fragments' : 'Help' }}</button><span v-if="session" class="account-divider" aria-hidden="true"></span><button v-if="session" class="text-button" @click="signOut">Sign out</button></div>
     </header>
-    <div class="page">
+    <div v-if="activeView === 'help'" class="page help-page">
+      <section class="help-heading">
+        <p class="eyebrow">A little guidance</p>
+        <h1>Help</h1>
+        <p class="help-intro">Fragments is a calm place to capture thoughts before deciding what they need to become.</p>
+      </section>
+      <div class="help-content">
+        <section class="help-section">
+          <h2>What is Fragments?</h2>
+          <p>Fragments is a calm, private notebook for capturing thoughts before organising them. A fragment can be an idea, memory, task, reflection, observation, quote, or anything you want to keep for later.</p>
+        </section>
+        <section class="help-section">
+          <h2>How should I use it?</h2>
+          <p>Write first, organise later. Choose a day, add an optional title, write what is on your mind, and save it. You can return to previous or future days using the arrows. Your fragments can be edited or deleted at any time.</p>
+        </section>
+        <section class="help-section">
+          <h2>What can I do today?</h2>
+          <ul>
+            <li>Create text fragments with an optional title.</li>
+            <li>Record a short voice note and have it transcribed into a fragment.</li>
+            <li>Browse fragments by day.</li>
+            <li>Edit or delete your fragments.</li>
+            <li>Keep fragments private to your account.</li>
+          </ul>
+        </section>
+        <section class="help-section">
+          <h2>Voice notes</h2>
+          <p>Voice capture works in supported browsers and requires microphone permission. Recordings can be up to five minutes long. The audio is sent for transcription and then discarded; the resulting text is saved as a voice fragment.</p>
+          <p>Voice transcription is available in the deployed preview, while local development currently focuses on the text workflow.</p>
+        </section>
+        <section class="help-section">
+          <h2>What is not available yet?</h2>
+          <ul>
+            <li>Email verification or password recovery.</li>
+            <li>Tags, folders, contexts, or other ways to organise fragments.</li>
+            <li>Search, semantic search, exports, sharing, or synchronisation.</li>
+            <li>Mobile applications or notifications.</li>
+            <li>AI writing assistance beyond the current voice transcription.</li>
+          </ul>
+        </section>
+        <section class="help-section">
+          <h2>What may come next?</h2>
+          <p>The proposed direction is optional AI enrichment that preserves your voice, followed by lightweight contexts such as Work, Books, or Personal.</p>
+          <p>Later experiments may explore search, links, and ways to turn fragments into longer pieces of writing. These are ideas, not scheduled promises.</p>
+        </section>
+        <section class="help-section">
+          <h2>Privacy and limitations</h2>
+          <p>Fragments belong to the signed-in account that created them. This is an early technical preview, so it should not yet be treated as a finished production service. Please use test content while the project continues to evolve.</p>
+        </section>
+        <section class="help-section help-note">
+          <h2>Need to know</h2>
+          <p>The app is designed for quick capture, not perfect organisation. A fragment does not need to be complete, useful, or well written. It only needs to be worth keeping.</p>
+        </section>
+      </div>
+    </div>
+    <div v-else class="page">
       <section class="page-heading">
         <p class="eyebrow">Daily notes</p>
         <nav class="day-nav" aria-label="Date navigation">
