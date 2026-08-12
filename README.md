@@ -4,8 +4,8 @@ A calm, private-by-default digital notebook for capturing thoughts before organi
 
 ## Current status
 
-The authenticated text-fragment MVP works locally and is deployed as a remote
-technical preview on Cloudflare:
+The authenticated text-and-voice fragment MVP works locally and is deployed as a
+remote technical preview on Cloudflare:
 
 - Production preview: [fragments.jlaguigom-ai.workers.dev](https://fragments.jlaguigom-ai.workers.dev)
 - Health check: `/api/health`
@@ -14,7 +14,8 @@ technical preview on Cloudflare:
 - Authentication: local accounts with 30-day HttpOnly session cookies
 - Ownership: every fragment is scoped to its authenticated user
 - UI: responsive Vue interface with balanced type scale, compact writing flow and branded SVG icon
-- Latest deployment: commit `ca134a1` deployed to Cloudflare Workers
+- Voice capture: browser `MediaRecorder`, synchronous Workers AI Whisper transcription, temporary audio only
+- Latest deployment: commit `e5bc260` deployed to Cloudflare Workers
 
 Authentication is implemented with local accounts, server-side sessions and
 fragment ownership. Email verification and password recovery are not included yet.
@@ -33,7 +34,10 @@ npm install
 npm run dev
 ```
 
-Open `http://localhost:5173`. The API runs on port 3001 and creates its durable SQLite database at `apps/api/data/fragments.sqlite`.
+Open the Vite URL printed by `npm run dev` (normally `http://localhost:5173`). The
+API runs on port 3001 and creates its durable SQLite database at
+`apps/api/data/fragments.sqlite`. In local development, Vite proxies `/auth` and
+`/fragments` to Express; the local API does not provide Workers AI transcription.
 
 ## Useful commands
 
@@ -70,6 +74,21 @@ bundle and static assets without publishing a new version.
 The current production database is already created and bound in
 `apps/worker/wrangler.toml`. The database ID is configuration, not an application
 secret. Do not commit API tokens or other credentials.
+
+### Free-plan guardrails
+
+Fragments currently uses Cloudflare Workers, D1 and Workers AI on their free
+allocations. The voice flow limits each recording to five minutes and each upload
+to 10 MB, and discards the audio after transcription. Under Workers Free, the
+relevant daily limits are 100,000 Worker requests, 5 million D1 rows read,
+100,000 D1 rows written, 5 GB of D1 storage and 10,000 Workers AI neurons. Free
+plan limits fail closed when exceeded and reset daily; they do not create paid
+overage charges. Workers Paid has a $5/month minimum and can charge for usage
+above included allocations, so verify the account plan under Cloudflare Billing
+before enabling it. See the [Workers pricing](https://developers.cloudflare.com/workers/platform/pricing/),
+[D1 pricing](https://developers.cloudflare.com/d1/platform/pricing/) and
+[Workers AI pricing](https://developers.cloudflare.com/workers-ai/platform/pricing/)
+documentation.
 
 Use `npm run db:migrate:local -w @fragments/worker` and `npm run dev -w @fragments/worker`
 to exercise the Worker and a local D1 database. The local Express API remains the

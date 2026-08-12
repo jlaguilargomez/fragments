@@ -22,7 +22,7 @@ An important long-term personal use is collecting memories and reflections about
 - **AI assists invisibly.** Future AI should preserve the author's voice; it must not invent or aggressively reinterpret content.
 - **Learn through the code.** Architecture, decisions, and trade-offs are part of the product documentation.
 
-## Current status — Iteration 3 implemented locally and ready for remote AI verification
+## Current status — Iteration 3 complete locally, remotely, and in production preview
 
 The local MVP supports the complete text-fragment workflow:
 
@@ -46,10 +46,12 @@ The local MVP supports the complete text-fragment workflow:
 - Record short voice notes in browsers with `MediaRecorder`.
 - Transcribe voice uploads synchronously with Cloudflare Workers AI, discard the
   temporary audio, and store the result as a user-owned `voice` fragment.
+- Keep local development on the Vite/Express proxy while reserving real voice
+  transcription for the deployed Worker with the Workers AI binding.
 
 The voice flow is implemented and passes local type checks, builds, and API tests.
-The deployed preview still requires a controlled remote verification after applying
-the new D1 migration and enabling the Workers AI binding.
+The D1 migration was applied remotely, the `AI` binding is active, and the Worker
+was deployed from commit `e5bc260`.
 
 The current remote technical preview is:
 
@@ -59,7 +61,7 @@ It is a technical preview. Authentication and ownership are active, but email
 verification and password recovery are not implemented. Only test content should
 be entered.
 
-The latest verified UI and deployment state is commit `ca134a1` on `master`.
+The latest verified UI and deployment state is commit `e5bc260` on `master`.
 
 ### Current implementation
 
@@ -77,9 +79,13 @@ The latest verified UI and deployment state is commit `ca134a1` on `master`.
 | Remote database | Cloudflare D1 database `fragments` |
 | Main branch | `master` |
 | GitHub repository | `https://github.com/jlaguilargomez/fragments` |
-| Latest verified release | `ca134a1` — interface scale, alignment, and branded icon |
+| Latest verified release | `e5bc260` — voice capture, Workers AI transcription, and local proxy |
 
-The local web application runs on port `5173`; its API runs on port `3001`. Port `3000` is deliberately avoided because it is occupied by another local service in this environment. The remote application is served by a same-origin Cloudflare Worker with D1.
+The local web application normally runs on port `5173`; Vite may select the next
+available port if it is occupied. Its API runs on port `3001`, with Vite proxying
+`/auth` and `/fragments`. Port `3000` is deliberately avoided because it is
+occupied by another local service in this environment. The remote application is
+served by a same-origin Cloudflare Worker with D1.
 
 ### Published environments
 
@@ -101,8 +107,7 @@ explicitly with `npm run db:migrate:remote -w @fragments/worker`.
 Do **not** add these yet:
 
 - Email verification and password recovery.
-- Voice recording or speech-to-text.
-- OpenAI, OpenRouter, LLMs, or AI title generation.
+- OpenAI/OpenRouter chat models, transcription cleanup, or AI title generation.
 - Contexts, tags, folders, or hierarchical organisation.
 - Semantic search, embeddings, vector databases, or chat.
 - Export, cloud synchronisation, sharing, analytics, notifications, or mobile apps.
@@ -126,18 +131,34 @@ See [architecture.md](architecture.md) and the ADRs in [decisions](decisions) fo
 | --- | --- | --- |
 | 1. Core text fragments | Capture, persist, read, edit, and delete text fragments. | Complete locally and remotely |
 | 2. Authentication, users, and interface refinement | Private accounts, sessions, resource ownership, and the first responsive visual system. | Complete locally and remotely |
-| 3. Voice capture | Record audio and convert it to text. | Implemented; remote verification pending |
+| 3. Voice capture | Record audio and convert it to text. | Complete locally and remotely |
 | 4. AI enrichment | Optional transcription cleanup and title suggestions that preserve voice. | Planned |
 | 5. Contexts | Many-to-many, non-hierarchical contexts such as Marco, Work, and Books. | Planned |
 | 6+. Discovery and composition | Semantic search, links, book/document generation, and experiments. | Future |
 
 This roadmap is intentionally flexible. Change it based on real use of the app and what is learned.
 
+## Cost and usage guardrails
+
+The current deployment uses the free allocations of Workers, D1 and Workers AI.
+The application caps voice recordings at five minutes and uploads at 10 MB, and
+does not store original audio. Under Workers Free, the relevant limits are
+100,000 Worker requests/day, 5 million D1 rows read/day, 100,000 D1 rows
+written/day, 5 GB of D1 storage and 10,000 Workers AI neurons/day. Exceeding a
+free limit makes further operations fail until the daily reset; it does not create
+overage billing. Workers Paid has a $5/month minimum and usage-based charges, so
+the Cloudflare account plan should be checked before enabling it. See the official
+[Workers pricing](https://developers.cloudflare.com/workers/platform/pricing/),
+[D1 pricing](https://developers.cloudflare.com/d1/platform/pricing/) and
+[Workers AI pricing](https://developers.cloudflare.com/workers-ai/platform/pricing/)
+pages.
+
 ## Recommended next conversation
 
 The next useful product step is to decide whether test-account reset should remain a
 documented D1 operation or become a user-facing “delete account” flow. After that,
-the roadmap continues with voice capture.
+the roadmap continues with optional AI enrichment: cleanup and title suggestions
+that preserve the author's voice.
 
 ## How to use this document in future conversations
 
