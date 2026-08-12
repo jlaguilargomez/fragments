@@ -13,6 +13,7 @@ remote technical preview on Cloudflare:
 - Remote database: Cloudflare D1
 - Authentication: local accounts with 30-day HttpOnly session cookies
 - Ownership: every fragment is scoped to its authenticated user
+- Note privacy: titles and contents are encrypted in the browser with a key derived from the user's password; the API and D1 store ciphertext only
 - UI: responsive Vue interface with balanced type scale, compact writing flow and branded SVG icon
 - Help: a responsive in-app help screen covering usage, current capabilities, limitations and roadmap
 - Voice capture: browser `MediaRecorder`, synchronous Workers AI Whisper transcription, temporary audio only

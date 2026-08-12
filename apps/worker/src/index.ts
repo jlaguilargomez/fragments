@@ -56,8 +56,8 @@ function createD1FragmentRepository(database: D1Database): FragmentRepository & 
 }
 
 const dateSchema = z.iso.date();
-const createSchema = z.object({ title: z.string().max(200).nullable().optional(), content: z.string().trim().min(1).max(20_000), date: z.iso.date() });
-const updateSchema = z.object({ title: z.string().max(200).nullable().optional(), content: z.string().trim().min(1).max(20_000).optional() }).refine(value => value.title !== undefined || value.content !== undefined, 'At least one field is required');
+const createSchema = z.object({ title: z.string().max(200_000).nullable().optional(), content: z.string().min(1).max(200_000), date: z.iso.date() });
+const updateSchema = z.object({ title: z.string().max(200_000).nullable().optional(), content: z.string().min(1).max(200_000).optional() }).refine(value => value.title !== undefined || value.content !== undefined, 'At least one field is required');
 const credentialsSchema = z.object({ email: z.string().email(), password: z.string().min(12) });
 const voiceDateSchema = z.object({ date: z.iso.date() });
 const COOKIE = 'fragments_session';

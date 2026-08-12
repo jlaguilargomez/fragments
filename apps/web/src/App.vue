@@ -7,6 +7,7 @@ import { displayDate, shiftDate, toDateKey } from './date';
 import FragmentComposer from './components/FragmentComposer.vue';
 import FragmentEntry from './components/FragmentEntry.vue';
 import AuthPanel from './components/AuthPanel.vue';
+import { clearEncryption, decryptFragment, encryptFragmentFields, unlockEncryption } from './encryption';
 
 const selectedDate = ref(toDateKey(new Date()));
 const fragments = ref<Fragment[]>([]);
@@ -15,17 +16,30 @@ const error = ref('');
 const session = ref<AuthSession | null>(null);
 const activeView = ref<'fragments' | 'help'>('fragments');
 const checkingSession = ref(!isVisualDemo);
+const unlocked = ref(isVisualDemo);
 const assetBase = import.meta.env.BASE_URL;
 async function load() {
   if (!isVisualDemo && !session.value) return;
   loading.value = true; error.value = '';
-  try { fragments.value = await fragmentsApi.list(selectedDate.value); }
+  try {
+    const stored = await fragmentsApi.list(selectedDate.value);
+    if (!isVisualDemo && session.value) {
+      const decrypted = [];
+      for (const fragment of stored) {
+        const value = await decryptFragment(session.value.user.id, fragment);
+        decrypted.push({ ...fragment, title: value.title, content: value.content });
+        if (value.legacy) await fragmentsApi.update(fragment.id, await encryptFragmentFields(session.value.user.id, value));
+      }
+      fragments.value = decrypted;
+    } else fragments.value = stored;
+  }
   catch (caught) { error.value = caught instanceof Error ? caught.message : 'Could not load your fragments.'; }
   finally { loading.value = false; }
 }
 async function save(input: { title: string; content: string }): Promise<boolean> {
   try {
-    await fragmentsApi.create({ ...input, date: selectedDate.value });
+    const encrypted = isVisualDemo ? input : await encryptFragmentFields(session.value!.user.id, input);
+    await fragmentsApi.create({ title: encrypted.title, content: encrypted.content!, date: selectedDate.value });
     await load();
     return true;
   } catch (caught) {
@@ -34,23 +48,24 @@ async function save(input: { title: string; content: string }): Promise<boolean>
   }
 }
 async function transcribe(audio: Blob): Promise<boolean> {
-  try { await fragmentsApi.transcribe(audio, selectedDate.value); await load(); return true; }
+  try { const fragment = await fragmentsApi.transcribe(audio, selectedDate.value); if (!isVisualDemo && session.value) await fragmentsApi.update(fragment.id, await encryptFragmentFields(session.value.user.id, fragment)); await load(); return true; }
   catch (caught) { error.value = caught instanceof Error ? caught.message : 'Could not transcribe your recording.'; return false; }
 }
 async function update(id: string, input: { title: string; content: string }) {
-  try { await fragmentsApi.update(id, input); await load(); } catch (caught) { error.value = caught instanceof Error ? caught.message : 'Could not update your fragment.'; }
+  try { await fragmentsApi.update(id, isVisualDemo ? input : await encryptFragmentFields(session.value!.user.id, input)); await load(); } catch (caught) { error.value = caught instanceof Error ? caught.message : 'Could not update your fragment.'; }
 }
 async function remove(id: string) {
   if (!window.confirm('Delete this fragment?')) return;
   try { await fragmentsApi.remove(id); await load(); } catch (caught) { error.value = caught instanceof Error ? caught.message : 'Could not delete your fragment.'; }
 }
 watch(selectedDate, load);
-onMounted(async () => { if (isVisualDemo) { await load(); return; } try { session.value = await authApi.session(); } catch { session.value = null; } finally { checkingSession.value = false; if (session.value) await load(); } });
-async function signOut() { await authApi.logout(); session.value = null; fragments.value = []; }
+onMounted(async () => { if (isVisualDemo) { await load(); return; } try { session.value = await authApi.session(); } catch { session.value = null; } finally { checkingSession.value = false; } });
+async function authenticated(payload: { session: AuthSession; password: string }) { session.value = payload.session; await unlockEncryption(payload.password, payload.session.user.id); unlocked.value = true; await load(); }
+async function signOut() { clearEncryption(); await authApi.logout(); session.value = null; fragments.value = []; unlocked.value = false; }
 </script>
 
 <template>
-  <AuthPanel v-if="!isVisualDemo && !checkingSession && !session" @authenticated="session = $event; load()" />
+  <AuthPanel v-if="!isVisualDemo && !checkingSession && (!session || !unlocked)" @authenticated="authenticated" />
   <main v-else class="workspace">
     <header class="topbar">
       <div class="brand"><img class="brand-mark" :src="`${assetBase}icon.svg`" alt="" /><span>Fragments</span></div>
