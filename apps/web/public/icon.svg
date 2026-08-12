@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Fragments</title>
+  <desc id="desc">A half brain next to three lines representing fragments of thought.</desc>
+
+  <!-- The solid background keeps the mark legible as a favicon and PWA icon. -->
+  <rect width="512" height="512" rx="112" fill="#37352f"/>
+  <g fill="none" stroke="#fffdf8" stroke-width="20" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Half brain: intentionally kept open on the right so it reads at small sizes. -->
+    <path d="M234 92c-27-25-70-21-91 10-8 11-11 24-10 37-26 8-44 32-44 60 0 14 5 27 14 37-18 13-29 34-29 57 0 31 20 57 48 66-1 5-2 10-2 15 0 32 26 58 58 58h56V92Z"/>
+    <path d="M234 92v340"/>
+    <path d="M181 112c-13 12-17 31-11 48 5 14 15 24 29 29"/>
+    <path d="M125 199c15-4 31 1 41 13 10 12 12 28 6 42"/>
+    <path d="M129 292c18-5 38 3 47 20 7 13 7 27 1 40"/>
+    <path d="M175 352c16-4 31 3 39 17 7 12 7 27 0 39"/>
+    <path d="M193 168c-7 12-6 27 2 38 7 10 18 16 30 16"/>
+
+    <!-- Three compact fragments, sized to survive a 16px favicon. -->
+    <circle cx="304" cy="166" r="9" fill="#fffdf8" stroke="none"/>
+    <path d="M344 166h103"/>
+    <circle cx="304" cy="256" r="9" fill="#fffdf8" stroke="none"/>
+    <path d="M344 256h103"/>
+    <circle cx="304" cy="346" r="9" fill="#fffdf8" stroke="none"/>
+    <path d="M344 346h103"/>
+  </g>
+</svg>

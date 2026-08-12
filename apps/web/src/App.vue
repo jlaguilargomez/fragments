@@ -14,6 +14,7 @@ const loading = ref(false);
 const error = ref('');
 const session = ref<AuthSession | null>(null);
 const checkingSession = ref(!isVisualDemo);
+const assetBase = import.meta.env.BASE_URL;
 async function load() {
   if (!isVisualDemo && !session.value) return;
   loading.value = true; error.value = '';
@@ -47,7 +48,7 @@ async function signOut() { await authApi.logout(); session.value = null; fragmen
   <AuthPanel v-if="!isVisualDemo && !checkingSession && !session" @authenticated="session = $event; load()" />
   <main v-else class="workspace">
     <header class="topbar">
-      <div class="brand"><span class="brand-mark" aria-hidden="true">✦</span><span>Fragments</span></div>
+      <div class="brand"><img class="brand-mark" :src="`${assetBase}icon.svg`" alt="" /><span>Fragments</span></div>
       <p>{{ isVisualDemo ? 'Visual demo · changes are temporary' : session?.user.email }} <button v-if="session" class="text-button" @click="signOut">Sign out</button></p>
     </header>
     <div class="page">

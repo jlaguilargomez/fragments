@@ -28,8 +28,7 @@ button { cursor: pointer; }
 .topbar p { margin: 0; }
 .brand { display: flex; align-items: center; gap: 9px; font-weight: 600; color: #37352f; letter-spacing: -.01em; }
 .brand-mark {
-  display: grid; place-items: center; width: 24px; height: 24px; border: 1.5px solid #37352f;
-  border-radius: 5px; font-size: 12px; line-height: 1;
+  display: block; width: 24px; height: 24px; border-radius: 6px;
 }
 .page { width: min(100% - 48px, 800px); margin: 0 auto; padding: 78px 0 100px; }
 .page-heading { margin-bottom: 42px; }
