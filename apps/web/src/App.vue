@@ -49,17 +49,16 @@ async function signOut() { await authApi.logout(); session.value = null; fragmen
   <main v-else class="workspace">
     <header class="topbar">
       <div class="brand"><img class="brand-mark" :src="`${assetBase}icon.svg`" alt="" /><span>Fragments</span></div>
-      <p>{{ isVisualDemo ? 'Visual demo · changes are temporary' : session?.user.email }} <button v-if="session" class="text-button" @click="signOut">Sign out</button></p>
+      <div class="account-area"><span>{{ isVisualDemo ? 'Visual demo · changes are temporary' : session?.user.email }}</span><span v-if="session" class="account-divider" aria-hidden="true"></span><button v-if="session" class="text-button" @click="signOut">Sign out</button></div>
     </header>
     <div class="page">
       <section class="page-heading">
         <p class="eyebrow">Daily notes</p>
         <nav class="day-nav" aria-label="Date navigation">
           <button class="day-button" aria-label="Previous day" @click="selectedDate = shiftDate(selectedDate, -1)">‹</button>
-          <h1>{{ selectedDate === toDateKey(new Date()) ? 'Today' : displayDate(selectedDate) }}</h1>
+          <div class="day-summary"><h1>{{ selectedDate === toDateKey(new Date()) ? 'Today' : displayDate(selectedDate) }}</h1><p v-if="selectedDate === toDateKey(new Date())" class="date-label">{{ displayDate(selectedDate) }}</p></div>
           <button class="day-button" aria-label="Next day" @click="selectedDate = shiftDate(selectedDate, 1)">›</button>
         </nav>
-        <p class="date-label">{{ displayDate(selectedDate) }}</p>
       </section>
       <section class="capture" aria-label="Write a fragment"><FragmentComposer :save-fragment="save" /></section>
     <p v-if="error" class="error" role="alert">{{ error }}</p>

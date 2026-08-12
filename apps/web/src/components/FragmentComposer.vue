@@ -27,7 +27,8 @@ async function submit() {
 
 <template>
   <form class="composer" :class="{ compact }" @submit.prevent="submit">
-    <input v-model="title" aria-label="Fragment title" placeholder="Title (optional)" maxlength="200" />
+    <label class="composer-title-label" for="fragment-title">Title (optional)</label>
+    <input id="fragment-title" v-model="title" aria-label="Fragment title" placeholder="What is on your mind?" maxlength="200" />
     <textarea v-model="content" aria-label="Fragment content" placeholder="What is on your mind?" :rows="compact ? 4 : 7" maxlength="20000" required />
     <div class="composer-actions">
       <button v-if="compact" class="text-button" type="button" @click="emit('cancel')">Cancel</button>
