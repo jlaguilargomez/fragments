@@ -11,3 +11,6 @@ binding = "DB"
 database_name = "fragments"
 database_id = "021ba970-a8cb-45ee-b7e1-0f3592bddbf8"
 migrations_dir = "migrations"
+
+[ai]
+binding = "AI"

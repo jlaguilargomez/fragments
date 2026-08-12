@@ -22,7 +22,7 @@ An important long-term personal use is collecting memories and reflections about
 - **AI assists invisibly.** Future AI should preserve the author's voice; it must not invent or aggressively reinterpret content.
 - **Learn through the code.** Architecture, decisions, and trade-offs are part of the product documentation.
 
-## Current status — Iteration 2 complete locally, remotely, and in production preview
+## Current status — Iteration 3 implemented locally and ready for remote AI verification
 
 The local MVP supports the complete text-fragment workflow:
 
@@ -43,6 +43,13 @@ The local MVP supports the complete text-fragment workflow:
   application shell and authentication screen.
 - Verify the complete local flow for create, edit, delete, and day navigation before
   publishing the latest production preview.
+- Record short voice notes in browsers with `MediaRecorder`.
+- Transcribe voice uploads synchronously with Cloudflare Workers AI, discard the
+  temporary audio, and store the result as a user-owned `voice` fragment.
+
+The voice flow is implemented and passes local type checks, builds, and API tests.
+The deployed preview still requires a controlled remote verification after applying
+the new D1 migration and enabling the Workers AI binding.
 
 The current remote technical preview is:
 
@@ -119,7 +126,7 @@ See [architecture.md](architecture.md) and the ADRs in [decisions](decisions) fo
 | --- | --- | --- |
 | 1. Core text fragments | Capture, persist, read, edit, and delete text fragments. | Complete locally and remotely |
 | 2. Authentication, users, and interface refinement | Private accounts, sessions, resource ownership, and the first responsive visual system. | Complete locally and remotely |
-| 3. Voice capture | Record audio and convert it to text. | Planned |
+| 3. Voice capture | Record audio and convert it to text. | Implemented; remote verification pending |
 | 4. AI enrichment | Optional transcription cleanup and title suggestions that preserve voice. | Planned |
 | 5. Contexts | Many-to-many, non-hierarchical contexts such as Marco, Work, and Books. | Planned |
 | 6+. Discovery and composition | Semantic search, links, book/document generation, and experiments. | Future |

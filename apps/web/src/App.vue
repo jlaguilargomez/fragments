@@ -32,6 +32,10 @@ async function save(input: { title: string; content: string }): Promise<boolean>
     return false;
   }
 }
+async function transcribe(audio: Blob): Promise<boolean> {
+  try { await fragmentsApi.transcribe(audio, selectedDate.value); await load(); return true; }
+  catch (caught) { error.value = caught instanceof Error ? caught.message : 'Could not transcribe your recording.'; return false; }
+}
 async function update(id: string, input: { title: string; content: string }) {
   try { await fragmentsApi.update(id, input); await load(); } catch (caught) { error.value = caught instanceof Error ? caught.message : 'Could not update your fragment.'; }
 }
@@ -60,7 +64,7 @@ async function signOut() { await authApi.logout(); session.value = null; fragmen
           <button class="day-button" aria-label="Next day" @click="selectedDate = shiftDate(selectedDate, 1)">›</button>
         </nav>
       </section>
-      <section class="capture" aria-label="Write a fragment"><FragmentComposer :save-fragment="save" /></section>
+      <section class="capture" aria-label="Write a fragment"><FragmentComposer :save-fragment="save" :transcribe-fragment="transcribe" /></section>
     <p v-if="error" class="error" role="alert">{{ error }}</p>
     <section class="timeline" aria-label="Fragments for this day">
       <p v-if="!loading && fragments.length > 0" class="fragment-count">{{ fragments.length }} {{ fragments.length === 1 ? 'fragment' : 'fragments' }}</p>

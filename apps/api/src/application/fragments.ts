@@ -1,5 +1,6 @@
 export {
   createFragment,
+  createVoiceFragment,
   deleteFragment,
   FragmentNotFoundError,
   getFragment,

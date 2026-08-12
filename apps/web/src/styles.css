@@ -53,6 +53,12 @@ button { cursor: pointer; }
 .composer textarea { min-height: 220px; margin-top: 24px; padding: 17px 18px; border: 1px solid #cfcfcf; border-radius: 8px; resize: vertical; font-size: 16px; line-height: 1.55; }
 .composer textarea::placeholder { color: #a0a0a0; }
 .composer-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px; }
+.voice-capture { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 17px; color: #777; font-size: 13px; }
+.voice-button { padding-left: 0; color: #171717; font-weight: 600; }
+.voice-hint { color: #9b9a97; }
+.voice-status { color: #414141; font-variant-numeric: tabular-nums; }
+.recording-indicator { width: 9px; height: 9px; border-radius: 50%; background: #d44c47; }.recording-indicator.paused { background: #9b9a97; }
+.voice-error { flex-basis: 100%; margin: 0; color: #d44c47; }
 .save-button { border: 0; border-radius: 8px; padding: 12px 20px; background: #171717; color: #fff; font-size: 15px; font-weight: 600; transition: background .12s ease; }
 .save-button:hover { background: #000; }
 .text-button { appearance: none; border: 0; padding: 4px 5px; border-radius: 3px; color: #414141; background: transparent; font-size: inherit; }

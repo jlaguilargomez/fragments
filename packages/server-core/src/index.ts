@@ -22,18 +22,30 @@ export interface FragmentRepository {
   delete(userId: string, id: string): Promise<boolean>;
 }
 
+export interface VoiceTranscriber {
+  transcribe(audio: ArrayBuffer, mimeType: string): Promise<string>;
+}
+
 export class FragmentNotFoundError extends Error {
   constructor() { super('Fragment not found'); }
 }
 
 export function createFragment(repository: FragmentRepository, userId: string, input: CreateFragmentInput): Promise<StoredFragment> {
+  return createFragmentWithSource(repository, userId, input, 'text');
+}
+
+export function createVoiceFragment(repository: FragmentRepository, userId: string, input: Pick<CreateFragmentInput, 'date' | 'content'>): Promise<StoredFragment> {
+  return createFragmentWithSource(repository, userId, { ...input, title: null }, 'voice');
+}
+
+function createFragmentWithSource(repository: FragmentRepository, userId: string, input: CreateFragmentInput, source: StoredFragment['source']): Promise<StoredFragment> {
   const now = new Date().toISOString();
   const createdAt = `${input.date}T${now.slice(11)}`;
   return repository.create({
     id: crypto.randomUUID(), userId,
     title: normaliseTitle(input.title),
     content: input.content.trim(),
-    source: 'text',
+    source,
     createdAt,
     updatedAt: now
   });

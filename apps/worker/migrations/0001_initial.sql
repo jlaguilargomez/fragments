@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS fragments (
   user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
   title TEXT,
   content TEXT NOT NULL,
-  source TEXT NOT NULL CHECK (source = 'text'),
+  source TEXT NOT NULL CHECK (source IN ('text', 'voice')),
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );

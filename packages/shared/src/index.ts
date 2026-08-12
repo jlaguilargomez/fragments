@@ -3,7 +3,7 @@ export interface Fragment {
   userId?: string;
   title: string | null;
   content: string;
-  source: 'text';
+  source: 'text' | 'voice';
   createdAt: string;
   updatedAt: string;
 }

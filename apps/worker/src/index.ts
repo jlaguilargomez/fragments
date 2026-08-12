@@ -1,14 +1,15 @@
 import { z } from 'zod';
-import { createFragment, deleteFragment, FragmentNotFoundError, getFragment, getFragmentsForDate, getSession, InvalidCredentialsError, login, logout, signUp, updateFragment } from '@fragments/server-core';
+import { createFragment, createVoiceFragment, deleteFragment, FragmentNotFoundError, getFragment, getFragmentsForDate, getSession, InvalidCredentialsError, login, logout, signUp, updateFragment } from '@fragments/server-core';
 import type { AuthRepository, FragmentRepository, StoredFragment, StoredSession, StoredUser } from '@fragments/server-core';
 
 export interface Env {
   DB: D1Database;
   ASSETS: Fetcher;
+  AI: Ai;
 }
 
 type FragmentRow = {
-  id: string; user_id: string; title: string | null; content: string; source: 'text'; created_at: string; updated_at: string;
+  id: string; user_id: string; title: string | null; content: string; source: 'text' | 'voice'; created_at: string; updated_at: string;
 };
 type UserRow = { id: string; email: string; password_hash: string; created_at: string; updated_at: string };
 type SessionRow = { id: string; user_id: string; token_hash: string; expires_at: string; revoked_at: string | null; created_at: string };
@@ -58,7 +59,9 @@ const dateSchema = z.iso.date();
 const createSchema = z.object({ title: z.string().max(200).nullable().optional(), content: z.string().trim().min(1).max(20_000), date: z.iso.date() });
 const updateSchema = z.object({ title: z.string().max(200).nullable().optional(), content: z.string().trim().min(1).max(20_000).optional() }).refine(value => value.title !== undefined || value.content !== undefined, 'At least one field is required');
 const credentialsSchema = z.object({ email: z.string().email(), password: z.string().min(12) });
+const voiceDateSchema = z.object({ date: z.iso.date() });
 const COOKIE = 'fragments_session';
+const MAX_AUDIO_BYTES = 10 * 1024 * 1024;
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
@@ -78,6 +81,18 @@ async function handleApi(request: Request, env: Env): Promise<Response> {
     const suffix = url.pathname.slice('/api/fragments'.length);
     const session = await getSession(repository, cookieFrom(request));
     if (!session) return json({ error: 'Authentication required' }, 401);
+    if (suffix === '/voice' && request.method === 'POST') {
+      const form = await request.formData();
+      const date = voiceDateSchema.parse({ date: form.get('date') }).date;
+      const audio = form.get('audio');
+      if (!(audio instanceof File) || audio.size === 0) return json({ error: 'Audio is missing.' }, 400);
+      if (audio.size > MAX_AUDIO_BYTES) return json({ error: 'Audio is too large.' }, 400);
+      if (!audio.type.startsWith('audio/') && audio.type !== 'application/octet-stream') return json({ error: 'Unsupported audio format.' }, 400);
+      const result = await env.AI.run('@cf/openai/whisper', { audio: Array.from(new Uint8Array(await audio.arrayBuffer())) });
+      const content = result.text.trim();
+      if (!content) return json({ error: 'No speech was detected.' }, 422);
+      return json(await createVoiceFragment(repository, session.user.id, { date, content }), 201);
+    }
     if (suffix === '' && request.method === 'POST') return json(await createFragment(repository, session.user.id, createSchema.parse(await request.json())), 201);
     if (suffix === '' && request.method === 'GET') return json(await getFragmentsForDate(repository, session.user.id, dateSchema.parse(url.searchParams.get('date'))));
     const id = suffix.slice(1);

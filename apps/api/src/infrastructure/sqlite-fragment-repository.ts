@@ -2,7 +2,7 @@ import Database from 'better-sqlite3';
 import type { AuthRepository, FragmentRepository, StoredFragment, StoredSession, StoredUser } from '@fragments/server-core';
 import { applySqliteMigrations } from './sqlite-migrations.js';
 
-type FragmentRow = { id: string; user_id: string; title: string | null; content: string; source: 'text'; created_at: string; updated_at: string; };
+type FragmentRow = { id: string; user_id: string; title: string | null; content: string; source: 'text' | 'voice'; created_at: string; updated_at: string; };
 type UserRow = { id: string; email: string; password_hash: string; created_at: string; updated_at: string; };
 type SessionRow = { id: string; user_id: string; token_hash: string; expires_at: string; revoked_at: string | null; created_at: string; };
 
@@ -14,7 +14,7 @@ export function createSqliteFragmentRepository(filename: string): FragmentReposi
       id TEXT PRIMARY KEY,
       title TEXT,
       content TEXT NOT NULL,
-      source TEXT NOT NULL CHECK (source = 'text'),
+      source TEXT NOT NULL CHECK (source IN ('text', 'voice')),
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
     );

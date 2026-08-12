@@ -1,6 +1,7 @@
 import type { AuthCredentials, AuthSession, CreateFragmentInput, Fragment, UpdateFragmentInput } from '@fragments/shared';
 
-const baseUrl = import.meta.env.VITE_API_URL ?? (import.meta.env.DEV ? 'http://localhost:3001' : '');
+const baseUrl = import.meta.env.VITE_API_URL ?? '';
+const apiPrefix = baseUrl ? '' : (import.meta.env.DEV ? '' : '/api');
 export const isVisualDemo = import.meta.env.VITE_VISUAL_DEMO === 'true';
 
 const demoFragments: Fragment[] = [
@@ -47,6 +48,12 @@ const demoApi = {
     if (index === -1) return Promise.reject(new Error('Fragment not found'));
     demoFragments.splice(index, 1);
     return Promise.resolve();
+  },
+  transcribe(_audio: Blob, date: string) {
+    const now = new Date().toISOString();
+    const fragment: Fragment = { id: crypto.randomUUID(), title: null, content: 'A voice fragment from the visual demo.', source: 'voice', createdAt: `${date}T${now.slice(11)}`, updatedAt: now };
+    demoFragments.push(fragment);
+    return Promise.resolve(fragment);
   }
 };
 
@@ -60,17 +67,25 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 const liveApi = {
-  list(date: string) { return request<Fragment[]>(`${baseUrl ? '/fragments' : '/api/fragments'}?date=${date}`); },
-  create(input: CreateFragmentInput) { return request<Fragment>(baseUrl ? '/fragments' : '/api/fragments', { method: 'POST', body: JSON.stringify(input) }); },
-  update(id: string, input: UpdateFragmentInput) { return request<Fragment>(`${baseUrl ? '/fragments' : '/api/fragments'}/${id}`, { method: 'PATCH', body: JSON.stringify(input) }); },
-  remove(id: string) { return request<void>(`${baseUrl ? '/fragments' : '/api/fragments'}/${id}`, { method: 'DELETE' }); }
+  list(date: string) { return request<Fragment[]>(`${apiPrefix}/fragments?date=${date}`); },
+  create(input: CreateFragmentInput) { return request<Fragment>(`${apiPrefix}/fragments`, { method: 'POST', body: JSON.stringify(input) }); },
+  update(id: string, input: UpdateFragmentInput) { return request<Fragment>(`${apiPrefix}/fragments/${id}`, { method: 'PATCH', body: JSON.stringify(input) }); },
+  remove(id: string) { return request<void>(`${apiPrefix}/fragments/${id}`, { method: 'DELETE' }); },
+  async transcribe(audio: Blob, date: string) {
+    const form = new FormData();
+    form.append('date', date);
+    form.append('audio', audio, `fragment.${audio.type.includes('ogg') ? 'ogg' : 'webm'}`);
+    const response = await fetch(`${baseUrl}${apiPrefix}/fragments/voice`, { method: 'POST', body: form, credentials: 'include' });
+    if (!response.ok) { const body = await response.json().catch(() => ({ error: 'Transcription failed' })); throw new Error(body.error ?? 'Transcription failed'); }
+    return response.json() as Promise<Fragment>;
+  }
 };
 
 const authApi = {
-  session() { return request<AuthSession | null>(baseUrl ? '/auth/session' : '/api/auth/session'); },
-  signup(input: AuthCredentials) { return request<AuthSession>(baseUrl ? '/auth/signup' : '/api/auth/signup', { method: 'POST', body: JSON.stringify(input) }); },
-  login(input: AuthCredentials) { return request<AuthSession>(baseUrl ? '/auth/login' : '/api/auth/login', { method: 'POST', body: JSON.stringify(input) }); },
-  logout() { return request<void>(baseUrl ? '/auth/logout' : '/api/auth/logout', { method: 'POST' }); }
+  session() { return request<AuthSession | null>(`${apiPrefix}/auth/session`); },
+  signup(input: AuthCredentials) { return request<AuthSession>(`${apiPrefix}/auth/signup`, { method: 'POST', body: JSON.stringify(input) }); },
+  login(input: AuthCredentials) { return request<AuthSession>(`${apiPrefix}/auth/login`, { method: 'POST', body: JSON.stringify(input) }); },
+  logout() { return request<void>(`${apiPrefix}/auth/logout`, { method: 'POST' }); }
 };
 
 // GitHub Pages can only host static files. Its demo keeps interactions useful

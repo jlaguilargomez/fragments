@@ -53,4 +53,27 @@ describe('Fragments API', () => {
     await request(api).post('/auth/signup').send({ email: 'USER@example.com', password: 'a secure password' }).expect(409);
     await request(api).post('/auth/login').send({ email: 'user@example.com', password: 'wrong password' }).expect(401);
   });
+
+  it('transcribes an authenticated audio upload into a voice fragment', async () => {
+    const transcriber = { transcribe: async (audio: ArrayBuffer, mimeType: string) => { expect(audio.byteLength).toBeGreaterThan(0); expect(mimeType).toBe('audio/webm'); return 'A spoken thought.'; } };
+    const api = createApp(':memory:', transcriber); apps.push(api);
+    const cookie = await authenticated(api, 'voice@example.com');
+    const date = '2026-02-03';
+    const created = await request(api).post('/fragments/voice').set('Cookie', cookie)
+      .field('date', date).attach('audio', Buffer.from('fake audio'), { filename: 'fragment.webm', contentType: 'audio/webm' }).expect(201);
+
+    expect(created.body.source).toBe('voice');
+    expect(created.body.title).toBeNull();
+    expect(created.body.content).toBe('A spoken thought.');
+    expect((await request(api).get(`/fragments?date=${date}`).set('Cookie', cookie)).body[0].id).toBe(created.body.id);
+  });
+
+  it('rejects voice uploads without authentication and with an unsupported format', async () => {
+    const api = createApp(':memory:', { transcribe: async () => 'not used' }); apps.push(api);
+    await request(api).post('/fragments/voice').field('date', '2026-02-03')
+      .attach('audio', Buffer.from('fake audio'), { filename: 'fragment.txt', contentType: 'text/plain' }).expect(401);
+    const cookie = await authenticated(api, 'invalid-voice@example.com');
+    await request(api).post('/fragments/voice').set('Cookie', cookie).field('date', '2026-02-03')
+      .attach('audio', Buffer.from('fake audio'), { filename: 'fragment.txt', contentType: 'text/plain' }).expect(400);
+  });
 });

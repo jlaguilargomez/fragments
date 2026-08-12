@@ -44,6 +44,13 @@ and the Vue page reloads the selected day's chronological list.
 
 `GET /fragments?date=YYYY-MM-DD` filters on the ISO creation date and sorts ascending. ISO timestamps make the current ordering unambiguous. The browser selects dates in its local timezone; the current MVP stores timestamps in UTC, so entries made around midnight may appear under their UTC day. This is a known product decision to revisit once timezone semantics are specified.
 
+Voice capture uses `MediaRecorder` and sends a bounded `multipart/form-data` upload
+to `POST /fragments/voice`. The Worker validates the authenticated request, sends the
+in-memory audio bytes to Workers AI Whisper, and persists only the returned text as a
+`voice` fragment. The local Express route accepts an injected transcriber for tests;
+the default local runtime reports that voice transcription is unavailable because it
+does not have a Workers AI binding.
+
 ## API
 
 | Method | Path | Result |
@@ -53,6 +60,7 @@ and the Vue page reloads the selected day's chronological list.
 | `GET` | `/fragments/:id` | Returns one fragment or 404. |
 | `PATCH` | `/fragments/:id` | Edits title and/or content. |
 | `DELETE` | `/fragments/:id` | Removes it (204). |
+| `POST` | `/fragments/voice` | Transcribes a temporary audio upload into a voice fragment (201). |
 
 Malformed request data receives 400, missing fragments receive 404, and unexpected failures receive 500. Titles are optional, content is required and limited to 20,000 characters.
 
