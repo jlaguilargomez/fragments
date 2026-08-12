@@ -12,7 +12,7 @@ The core promise is:
 
 A person should be able to express a thought and know it is safely stored, without deciding where it belongs first. Fragments can be ideas, memories, tasks, reflections, observations, quotes, or material for future writing.
 
-An important long-term personal use is collecting memories and reflections about Marco, alongside topics such as books, work, learning, and personal ideas.
+An important long-term personal use is collecting memories and reflections, alongside topics such as books, work, learning, and personal ideas.
 
 ## Product principles
 
@@ -78,7 +78,7 @@ The latest verified UI and deployment state is commit `e5bc260` on `master`.
 | Remote runtime | Cloudflare Worker serving Vue assets and `/api/*` |
 | Remote database | Cloudflare D1 database `fragments` |
 | Main branch | `master` |
-| GitHub repository | `https://github.com/jlaguilargomez/fragments` |
+| GitHub repository | The repository URL is maintained by the project owner. |
 | Latest verified release | `e5bc260` — voice capture, Workers AI transcription, and local proxy |
 
 The local web application normally runs on port `5173`; Vite may select the next
@@ -93,7 +93,7 @@ A GitHub Actions workflow prepares a **visual-only demo** for GitHub Pages. It u
 
 Before the workflow can deploy, GitHub Pages must be enabled in the repository settings and configured to use **GitHub Actions** as its source. Expected URL once enabled:
 
-`https://jlaguilargomez.github.io/fragments/`
+The GitHub Pages URL is maintained by the project owner and deployment settings.
 
 The functional remote preview is deployed separately with Wrangler to:
 

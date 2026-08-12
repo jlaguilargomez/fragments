@@ -67,11 +67,12 @@ Malformed request data receives 400, missing fragments receive 404, and unexpect
 ## Persistence
 
 The versioned schema includes `users`, `sessions` and `fragments`; `fragments.user_id`
-is nullable until the authentication iteration assigns ownership. `source` is
-constrained to `text`; voice is deliberately outside this MVP. Local migrations are
-applied through `apps/api/src/infrastructure/sqlite-migrations.ts`. D1 migrations
-live in `apps/worker/migrations` and are applied with Wrangler. Local data is not
-implicitly copied to D1; migration is an explicit export/import operation.
+is nullable until the authentication iteration assigns ownership. `source` supports
+both text and voice fragments. Voice uploads are transcribed in memory and the
+original audio is discarded. Local migrations are applied through
+`apps/api/src/infrastructure/sqlite-migrations.ts`. D1 migrations live in
+`apps/worker/migrations` and are applied with Wrangler. Local data is not implicitly
+copied to D1; migration is an explicit export/import operation.
 
 ## External dependencies
 
