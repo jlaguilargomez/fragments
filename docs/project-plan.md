@@ -38,6 +38,11 @@ The local MVP supports the complete text-fragment workflow:
 - Register, sign in, restore and revoke server-side sessions with HttpOnly cookies.
 - Associate fragment reads and writes with the authenticated user.
 - Reset individual test accounts directly in D1 without recreating the database.
+- Apply a UI/UX refinement pass with a consistent type scale, shared content alignment,
+  a more compact editor, responsive mobile spacing, and the branded SVG icon in the
+  application shell and authentication screen.
+- Verify the complete local flow for create, edit, delete, and day navigation before
+  publishing the latest production preview.
 
 The current remote technical preview is:
 
@@ -46,6 +51,8 @@ The current remote technical preview is:
 It is a technical preview. Authentication and ownership are active, but email
 verification and password recovery are not implemented. Only test content should
 be entered.
+
+The latest verified UI and deployment state is commit `ca134a1` on `master`.
 
 ### Current implementation
 
@@ -63,6 +70,7 @@ be entered.
 | Remote database | Cloudflare D1 database `fragments` |
 | Main branch | `master` |
 | GitHub repository | `https://github.com/jlaguilargomez/fragments` |
+| Latest verified release | `ca134a1` — interface scale, alignment, and branded icon |
 
 The local web application runs on port `5173`; its API runs on port `3001`. Port `3000` is deliberately avoided because it is occupied by another local service in this environment. The remote application is served by a same-origin Cloudflare Worker with D1.
 
@@ -110,7 +118,7 @@ See [architecture.md](architecture.md) and the ADRs in [decisions](decisions) fo
 | Iteration | Outcome | Status |
 | --- | --- | --- |
 | 1. Core text fragments | Capture, persist, read, edit, and delete text fragments. | Complete locally and remotely |
-| 2. Authentication and users | Private accounts, sessions, and resource ownership. | Complete locally and remotely |
+| 2. Authentication, users, and interface refinement | Private accounts, sessions, resource ownership, and the first responsive visual system. | Complete locally and remotely |
 | 3. Voice capture | Record audio and convert it to text. | Planned |
 | 4. AI enrichment | Optional transcription cleanup and title suggestions that preserve voice. | Planned |
 | 5. Contexts | Many-to-many, non-hierarchical contexts such as Marco, Work, and Books. | Planned |

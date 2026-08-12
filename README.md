@@ -13,6 +13,8 @@ technical preview on Cloudflare:
 - Remote database: Cloudflare D1
 - Authentication: local accounts with 30-day HttpOnly session cookies
 - Ownership: every fragment is scoped to its authenticated user
+- UI: responsive Vue interface with balanced type scale, compact writing flow and branded SVG icon
+- Latest deployment: commit `ca134a1` deployed to Cloudflare Workers
 
 Authentication is implemented with local accounts, server-side sessions and
 fragment ownership. Email verification and password recovery are not included yet.
@@ -39,6 +41,7 @@ Open `http://localhost:5173`. The API runs on port 3001 and creates its durable 
 npm run build
 npm run typecheck
 npm test
+npm run build:worker
 ```
 
 ## Remote deployment with Cloudflare
@@ -51,6 +54,18 @@ assets and the API from the same origin; D1 provides the remote SQLite database.
 3. Copy the returned database ID into `apps/worker/wrangler.toml`.
 4. Build the web app and apply migrations: `npm run build -w @fragments/web` and `npm run db:migrate:remote -w @fragments/worker`.
 5. Deploy with `npm run deploy -w @fragments/worker`.
+
+Before a production deployment, run the complete verification sequence:
+
+```bash
+npm test
+npm run typecheck
+npm run build:worker
+npm run deploy -w @fragments/worker
+```
+
+Use `npx wrangler deploy --dry-run` from `apps/worker` to validate the Worker
+bundle and static assets without publishing a new version.
 
 The current production database is already created and bound in
 `apps/worker/wrangler.toml`. The database ID is configuration, not an application
