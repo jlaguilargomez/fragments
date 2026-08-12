@@ -118,7 +118,8 @@ async function signOut() { clearEncryption(); await authApi.logout(); session.va
         </section>
         <section class="help-section">
           <h2>Privacy and limitations</h2>
-          <p>Fragments belong to the signed-in account that created them. This is an early technical preview, so it should not yet be treated as a finished production service. Please use test content while the project continues to evolve.</p>
+          <p>Your note titles and contents are encrypted in your browser before they are stored. Only your browser can decrypt them with your password, so the API and database store ciphertext rather than readable notes.</p>
+          <p>Fragments belong to the signed-in account that created them. Because your password is part of the encryption key, losing it also means losing access to encrypted notes. This is an early technical preview, so it should not yet be treated as a finished production service. Please use test content while the project continues to evolve.</p>
         </section>
         <section class="help-section help-note">
           <h2>Need to know</h2>
