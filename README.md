@@ -17,12 +17,16 @@ remote technical preview on Cloudflare:
 - UI: responsive Vue interface with balanced type scale, compact writing flow and branded SVG icon
 - Help: a responsive in-app help screen covering usage, current capabilities, limitations and roadmap
 - Voice capture: browser `MediaRecorder`, synchronous Workers AI Whisper transcription, temporary audio only
-- Latest deployment: commit `e5bc260` deployed to Cloudflare Workers
+- Latest deployment: commit `1a07924` deployed to Cloudflare Workers
 
 Authentication is implemented with local accounts, server-side sessions and
 fragment ownership. Email verification and password recovery are not included yet.
 Passwords use PBKDF2-HMAC-SHA256 with 100,000 iterations, the highest count
 accepted by the current Cloudflare Workers Web Crypto runtime.
+Note encryption uses a separate 250,000-iteration browser-side PBKDF2 derivation
+and AES-GCM; its key is never sent to the server. Existing plaintext notes migrate
+when opened, while voice transcription remains a temporary server-side privacy
+exception.
 
 ## Requirements
 

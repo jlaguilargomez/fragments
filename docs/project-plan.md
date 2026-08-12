@@ -18,11 +18,11 @@ An important long-term personal use is collecting memories and reflections, alon
 
 - **Fast capture over organisation.** Writing comes before categorising.
 - **A quiet interface.** The product should feel like a notebook or journal, not a SaaS dashboard.
-- **Private by default.** Fragments will eventually belong to one user and must never leak across users.
+- **Private by default.** Fragments belong to one user, and note titles and content are encrypted in the browser before persistence.
 - **AI assists invisibly.** Future AI should preserve the author's voice; it must not invent or aggressively reinterpret content.
 - **Learn through the code.** Architecture, decisions, and trade-offs are part of the product documentation.
 
-## Current status — Iteration 3 complete locally, remotely, and in production preview
+## Current status — Iteration 4 complete locally, remotely, and in production preview
 
 The local MVP supports the complete text-fragment workflow:
 
@@ -50,20 +50,28 @@ The local MVP supports the complete text-fragment workflow:
   temporary audio, and store the result as a user-owned `voice` fragment.
 - Keep local development on the Vite/Express proxy while reserving real voice
   transcription for the deployed Worker with the Workers AI binding.
+- Encrypt note titles and content in the browser with AES-GCM using a key derived
+  from the user's password; the API and D1 store ciphertext only for new or migrated notes.
+- Migrate legacy plaintext notes lazily when the authenticated user opens their day.
+- Keep the encryption key in browser memory only; a fresh tab or browser restart requires
+  the user to authenticate again before notes can be read.
 
-The voice flow is implemented and passes local type checks, builds, and API tests.
-The D1 migration was applied remotely, the `AI` binding is active, and the Worker
-was deployed from commit `e5bc260`.
+The voice flow and client-side note encryption are implemented and pass local type
+checks, builds, and API tests. The D1 migration was applied remotely, the `AI`
+binding is active, and the Worker was deployed from commit `1a07924`.
 
 The current remote technical preview is:
 
 `https://fragments.jlaguigom-ai.workers.dev`
 
 It is a technical preview. Authentication and ownership are active, but email
-verification and password recovery are not implemented. Only test content should
-be entered.
+verification and password recovery are not implemented. Losing the account password
+also loses access to encrypted notes. Existing notes become encrypted progressively
+when opened after this release. Voice transcription remains a privacy exception:
+audio and the resulting text are visible to the Worker/Workers AI before the result
+is encrypted in the browser.
 
-The latest verified UI and deployment state is commit `e5bc260` on `master`.
+The latest verified UI and deployment state is commit `1a07924` on `master`.
 
 ### Current implementation
 
@@ -74,6 +82,7 @@ The latest verified UI and deployment state is commit `e5bc260` on `master`.
 | Persistence | SQLite via `better-sqlite3` locally; Cloudflare D1 remotely |
 | Validation | Zod at the API boundary |
 | Password storage | PBKDF2-HMAC-SHA256, 100,000 iterations, shared by Node and Workers |
+| Note encryption | Browser AES-GCM; PBKDF2-derived key with 250,000 iterations; key is never sent to the API |
 | Sessions | Server-side records, token digest in D1/SQLite, 30-day HttpOnly cookie |
 | Repository | npm workspaces monorepo |
 | Local database | SQLite file at `apps/api/data/fragments.sqlite` |
@@ -81,7 +90,7 @@ The latest verified UI and deployment state is commit `e5bc260` on `master`.
 | Remote database | Cloudflare D1 database `fragments` |
 | Main branch | `master` |
 | GitHub repository | The repository URL is maintained by the project owner. |
-| Latest verified release | `e5bc260` — voice capture, Workers AI transcription, and local proxy |
+| Latest verified release | `1a07924` — client-side end-to-end note encryption |
 
 The local web application normally runs on port `5173`; Vite may select the next
 available port if it is occupied. Its API runs on port `3001`, with Vite proxying
@@ -109,6 +118,7 @@ explicitly with `npm run db:migrate:remote -w @fragments/worker`.
 Do **not** add these yet:
 
 - Email verification and password recovery.
+- Password reset or server-side recovery of encrypted notes without a user-held recovery key.
 - OpenAI/OpenRouter chat models, transcription cleanup, or AI title generation.
 - Contexts, tags, folders, or hierarchical organisation.
 - Semantic search, embeddings, vector databases, or chat.
@@ -135,6 +145,7 @@ See [architecture.md](architecture.md) and the ADRs in [decisions](decisions) fo
 | 2. Authentication, users, and interface refinement | Private accounts, sessions, resource ownership, and the first responsive visual system. | Complete locally and remotely |
 | 3. Voice capture | Record audio and convert it to text. | Complete locally and remotely |
 | 3a. Help and product guidance | Explain the current workflow, capabilities, limitations, privacy notes, and proposed future direction. | Complete locally and remotely |
+| 3b. Client-side note encryption | Encrypt note titles and content before API persistence; migrate legacy notes progressively. | Complete locally and remotely |
 | 4. AI enrichment | Optional transcription cleanup and title suggestions that preserve voice. | Planned |
 | 5. Contexts | Many-to-many, non-hierarchical contexts such as Marco, Work, and Books. | Planned |
 | 6+. Discovery and composition | Semantic search, links, book/document generation, and experiments. | Future |

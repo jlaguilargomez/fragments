@@ -8,8 +8,9 @@ database adapters remain separate.
 ```mermaid
 flowchart LR
   B[Browser] --> V[Vue web app]
-  V -->|HTTP JSON| E[Express API]
-  V -->|HTTP JSON| W[Cloudflare Worker]
+  V --> C[AES-GCM encryption/decryption]
+  C -->|Ciphertext over HTTP JSON| E[Express API]
+  C -->|Ciphertext over HTTP JSON| W[Cloudflare Worker]
   E --> A[Shared application functions]
   W --> A
   A --> S[Repository contract]
@@ -36,20 +37,27 @@ no generic repository framework or dependency-injection container is introduced.
 
 ## Request flow
 
-When a person saves a fragment, `FragmentComposer.vue` calls `api.ts`. The local
-Express route or the Worker route validates JSON with Zod. `createFragment`
-normalises the optional title, assigns an ID and timestamps, then asks the selected
-repository adapter to insert it. The created fragment returns as JSON with HTTP 201
-and the Vue page reloads the selected day's chronological list.
+When a person saves a fragment, `FragmentComposer.vue` calls `api.ts`. Before the
+request, `apps/web/src/encryption.ts` encrypts the title and content with AES-GCM.
+The local Express route or the Worker route validates and stores the opaque
+ciphertext; it does not need the user's encryption key. The browser decrypts the
+response after loading it. A key is derived from the login password with PBKDF2 and
+kept in browser memory only.
+
+Legacy plaintext fragments are detected by the client and rewritten as ciphertext
+after successful decryption. This migration is lazy so it preserves existing IDs
+and timestamps and does not require a database rebuild.
 
 `GET /fragments?date=YYYY-MM-DD` filters on the ISO creation date and sorts ascending. ISO timestamps make the current ordering unambiguous. The browser selects dates in its local timezone; the current MVP stores timestamps in UTC, so entries made around midnight may appear under their UTC day. This is a known product decision to revisit once timezone semantics are specified.
 
 Voice capture uses `MediaRecorder` and sends a bounded `multipart/form-data` upload
 to `POST /fragments/voice`. The Worker validates the authenticated request, sends the
-in-memory audio bytes to Workers AI Whisper, and persists only the returned text as a
-`voice` fragment. The local Express route accepts an injected transcriber for tests;
-the default local runtime reports that voice transcription is unavailable because it
-does not have a Workers AI binding.
+in-memory audio bytes to Workers AI Whisper, and persists the returned text as a
+temporary plaintext `voice` fragment. The browser immediately replaces that result
+with encrypted fields. This is intentionally documented as a privacy exception;
+full E2EE voice capture requires local transcription. The local Express route accepts
+an injected transcriber for tests; the default local runtime reports that voice
+transcription is unavailable because it does not have a Workers AI binding.
 
 ## API
 
@@ -62,14 +70,16 @@ does not have a Workers AI binding.
 | `DELETE` | `/fragments/:id` | Removes it (204). |
 | `POST` | `/fragments/voice` | Transcribes a temporary audio upload into a voice fragment (201). |
 
-Malformed request data receives 400, missing fragments receive 404, and unexpected failures receive 500. Titles are optional, content is required and limited to 20,000 characters.
+Malformed request data receives 400, missing fragments receive 404, and unexpected failures receive 500. Titles are optional, content is required, and the API accepts up to 200,000 characters to accommodate ciphertext; the browser still limits ordinary note input to 20,000 characters.
 
 ## Persistence
 
 The versioned schema includes `users`, `sessions` and `fragments`; `fragments.user_id`
 is nullable until the authentication iteration assigns ownership. `source` supports
 both text and voice fragments. Voice uploads are transcribed in memory and the
-original audio is discarded. Local migrations are applied through
+original audio is discarded. Note `title` and `content` are opaque ciphertext after
+client migration; dates, ownership, source and approximate ciphertext size remain
+visible to the server. Local migrations are applied through
 `apps/api/src/infrastructure/sqlite-migrations.ts`. D1 migrations live in
 `apps/worker/migrations` and are applied with Wrangler. Local data is not implicitly
 copied to D1; migration is an explicit export/import operation.
