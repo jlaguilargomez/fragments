@@ -8,6 +8,7 @@ import FragmentComposer from './components/FragmentComposer.vue';
 import FragmentEntry from './components/FragmentEntry.vue';
 import AuthPanel from './components/AuthPanel.vue';
 import { clearEncryption, decryptFragment, encryptFragmentFields, unlockEncryption } from './encryption';
+import { locale, setLocale, t, translateError } from './i18n';
 
 const selectedDate = ref(toDateKey(new Date()));
 const fragments = ref<Fragment[]>([]);
@@ -33,7 +34,7 @@ async function load() {
       fragments.value = decrypted;
     } else fragments.value = stored;
   }
-  catch (caught) { error.value = caught instanceof Error ? caught.message : 'Could not load your fragments.'; }
+  catch (caught) { error.value = translateError(caught, 'couldNotLoad'); }
   finally { loading.value = false; }
 }
 async function save(input: { title: string; content: string }): Promise<boolean> {
@@ -43,20 +44,20 @@ async function save(input: { title: string; content: string }): Promise<boolean>
     await load();
     return true;
   } catch (caught) {
-    error.value = caught instanceof Error ? caught.message : 'Could not save your fragment.';
+    error.value = translateError(caught, 'couldNotSave');
     return false;
   }
 }
 async function transcribe(audio: Blob): Promise<boolean> {
   try { const fragment = await fragmentsApi.transcribe(audio, selectedDate.value); if (!isVisualDemo && session.value) await fragmentsApi.update(fragment.id, await encryptFragmentFields(session.value.user.id, fragment)); await load(); return true; }
-  catch (caught) { error.value = caught instanceof Error ? caught.message : 'Could not transcribe your recording.'; return false; }
+  catch (caught) { error.value = translateError(caught, 'couldNotTranscribe'); return false; }
 }
 async function update(id: string, input: { title: string; content: string }) {
-  try { await fragmentsApi.update(id, isVisualDemo ? input : await encryptFragmentFields(session.value!.user.id, input)); await load(); } catch (caught) { error.value = caught instanceof Error ? caught.message : 'Could not update your fragment.'; }
+  try { await fragmentsApi.update(id, isVisualDemo ? input : await encryptFragmentFields(session.value!.user.id, input)); await load(); } catch (caught) { error.value = translateError(caught, 'couldNotUpdate'); }
 }
 async function remove(id: string) {
-  if (!window.confirm('Delete this fragment?')) return;
-  try { await fragmentsApi.remove(id); await load(); } catch (caught) { error.value = caught instanceof Error ? caught.message : 'Could not delete your fragment.'; }
+  if (!window.confirm(t('deleteConfirm'))) return;
+  try { await fragmentsApi.remove(id); await load(); } catch (caught) { error.value = translateError(caught, 'couldNotDelete'); }
 }
 watch(selectedDate, load);
 onMounted(async () => { if (isVisualDemo) { await load(); return; } try { session.value = await authApi.session(); } catch { session.value = null; } finally { checkingSession.value = false; } });
@@ -69,79 +70,62 @@ async function signOut() { clearEncryption(); await authApi.logout(); session.va
   <main v-else class="workspace">
     <header class="topbar">
       <div class="brand"><img class="brand-mark" :src="`${assetBase}icon.svg`" alt="" /><span>Fragments</span></div>
-      <div class="account-area"><span>{{ isVisualDemo ? 'Visual demo · changes are temporary' : session?.user.email }}</span><span class="account-divider" aria-hidden="true"></span><button class="text-button" @click="activeView = activeView === 'help' ? 'fragments' : 'help'">{{ activeView === 'help' ? 'Back to fragments' : 'Help' }}</button><span v-if="session" class="account-divider" aria-hidden="true"></span><button v-if="session" class="text-button" @click="signOut">Sign out</button></div>
+      <div class="account-area"><span>{{ isVisualDemo ? t('visualDemo') : session?.user.email }}</span><span class="account-divider" aria-hidden="true"></span><button class="text-button" @click="activeView = activeView === 'help' ? 'fragments' : 'help'">{{ activeView === 'help' ? t('backToFragments') : t('help') }}</button><label class="language-picker"><span class="sr-only">{{ t('language') }}</span><select :value="locale" :aria-label="t('language')" @change="setLocale(($event.target as HTMLSelectElement).value as 'en' | 'es')"><option value="en">{{ t('english') }}</option><option value="es">{{ t('spanish') }}</option></select></label><span v-if="session" class="account-divider" aria-hidden="true"></span><button v-if="session" class="text-button" @click="signOut">{{ t('signOut') }}</button></div>
     </header>
     <div v-if="activeView === 'help'" class="page help-page">
       <section class="help-heading">
-        <p class="eyebrow">A little guidance</p>
-        <h1>Help</h1>
-        <p class="help-intro">Fragments is a calm place to capture thoughts before deciding what they need to become.</p>
+        <p class="eyebrow">{{ t('littleGuidance') }}</p>
+        <h1>{{ t('help') }}</h1>
+        <p class="help-intro">{{ t('helpIntro') }}</p>
       </section>
       <div class="help-content">
         <section class="help-section">
-          <h2>What is Fragments?</h2>
-          <p>Fragments is a calm, private notebook for capturing thoughts before organising them. A fragment can be an idea, memory, task, reflection, observation, quote, or anything you want to keep for later.</p>
+          <h2>{{ t('whatIsFragments') }}</h2><p>{{ t('fragmentsDescription') }}</p>
         </section>
         <section class="help-section">
-          <h2>How should I use it?</h2>
-          <p>Write first, organise later. Choose a day, add an optional title, write what is on your mind, and save it. You can return to previous or future days using the arrows. Your fragments can be edited or deleted at any time.</p>
+          <h2>{{ t('howUse') }}</h2><p>{{ t('howUseDescription') }}</p>
         </section>
         <section class="help-section">
-          <h2>What can I do today?</h2>
+          <h2>{{ t('whatToday') }}</h2>
           <ul>
-            <li>Create text fragments with an optional title.</li>
-            <li>Record a short voice note and have it transcribed into a fragment.</li>
-            <li>Browse fragments by day.</li>
-            <li>Edit or delete your fragments.</li>
-            <li>Keep fragments private to your account.</li>
+            <li>{{ t('createText') }}</li><li>{{ t('recordVoice') }}</li><li>{{ t('browseByDay') }}</li><li>{{ t('editOrDelete') }}</li><li>{{ t('keepPrivate') }}</li>
           </ul>
         </section>
         <section class="help-section">
-          <h2>Voice notes</h2>
-          <p>Voice capture works in supported browsers and requires microphone permission. Recordings can be up to five minutes long. The audio is sent for transcription and then discarded; the resulting text is saved as a voice fragment.</p>
-          <p>Voice transcription is available in the deployed preview, while local development currently focuses on the text workflow.</p>
+          <h2>{{ t('voiceNotes') }}</h2><p>{{ t('voiceDescription') }}</p><p>{{ t('voicePreview') }}</p>
         </section>
         <section class="help-section">
-          <h2>What is not available yet?</h2>
+          <h2>{{ t('notAvailable') }}</h2>
           <ul>
-            <li>Email verification or password recovery.</li>
-            <li>Tags, folders, contexts, or other ways to organise fragments.</li>
-            <li>Search, semantic search, exports, sharing, or synchronisation.</li>
-            <li>Mobile applications or notifications.</li>
-            <li>AI writing assistance beyond the current voice transcription.</li>
+            <li>{{ t('noEmailRecovery') }}</li><li>{{ t('noOrganisation') }}</li><li>{{ t('noSearch') }}</li><li>{{ t('noMobile') }}</li><li>{{ t('noAi') }}</li>
           </ul>
         </section>
         <section class="help-section">
-          <h2>What may come next?</h2>
-          <p>The proposed direction is optional AI enrichment that preserves your voice, followed by lightweight contexts such as Work, Books, or Personal.</p>
-          <p>Later experiments may explore search, links, and ways to turn fragments into longer pieces of writing. These are ideas, not scheduled promises.</p>
+          <h2>{{ t('mayComeNext') }}</h2><p>{{ t('futureDescription') }}</p><p>{{ t('futureExperiments') }}</p>
         </section>
         <section class="help-section">
-          <h2>Privacy and limitations</h2>
-          <p>Your note titles and contents are encrypted in your browser before they are stored. Only your browser can decrypt them with your password, so the API and database store ciphertext rather than readable notes.</p>
-          <p>Fragments belong to the signed-in account that created them. Because your password is part of the encryption key, losing it also means losing access to encrypted notes. This is an early technical preview, so it should not yet be treated as a finished production service. Please use test content while the project continues to evolve.</p>
+          <h2>{{ t('privacy') }}</h2><p>{{ t('privacyDescription') }}</p><p>{{ t('privacyWarning') }}</p>
         </section>
         <section class="help-section help-note">
-          <h2>Need to know</h2>
-          <p>The app is designed for quick capture, not perfect organisation. A fragment does not need to be complete, useful, or well written. It only needs to be worth keeping.</p>
+          <h2>{{ t('needToKnow') }}</h2><p>{{ t('needToKnowDescription') }}</p>
         </section>
       </div>
     </div>
     <div v-else class="page">
       <section class="page-heading">
-        <p class="eyebrow">Daily notes</p>
-        <nav class="day-nav" aria-label="Date navigation">
-          <button class="day-button" aria-label="Previous day" @click="selectedDate = shiftDate(selectedDate, -1)">‹</button>
-          <div class="day-summary"><h1>{{ selectedDate === toDateKey(new Date()) ? 'Today' : displayDate(selectedDate) }}</h1><p v-if="selectedDate === toDateKey(new Date())" class="date-label">{{ displayDate(selectedDate) }}</p></div>
-          <button class="day-button" aria-label="Next day" @click="selectedDate = shiftDate(selectedDate, 1)">›</button>
+        <p class="eyebrow">{{ t('dailyNotes') }}</p>
+        <nav class="day-nav" :aria-label="t('dateNavigation')">
+          <button class="day-button" :aria-label="t('previousDay')" @click="selectedDate = shiftDate(selectedDate, -1)">‹</button>
+          <div class="day-summary"><h1>{{ selectedDate === toDateKey(new Date()) ? t('today') : displayDate(selectedDate, locale === 'es' ? 'es-ES' : 'en-US') }}</h1><p v-if="selectedDate === toDateKey(new Date())" class="date-label">{{ displayDate(selectedDate, locale === 'es' ? 'es-ES' : 'en-US') }}</p></div>
+          <button class="day-button" :aria-label="t('nextDay')" @click="selectedDate = shiftDate(selectedDate, 1)">›</button>
         </nav>
       </section>
-      <section class="capture" aria-label="Write a fragment"><FragmentComposer :save-fragment="save" :transcribe-fragment="transcribe" /></section>
+      <section class="capture" :aria-label="t('writeFragment')"><FragmentComposer :save-fragment="save" :transcribe-fragment="transcribe" /></section>
     <p v-if="error" class="error" role="alert">{{ error }}</p>
-    <section class="timeline" aria-label="Fragments for this day">
-      <p v-if="!loading && fragments.length > 0" class="fragment-count">{{ fragments.length }} {{ fragments.length === 1 ? 'fragment' : 'fragments' }}</p>
-      <p v-if="loading" class="empty">Opening the page…</p>
-      <p v-else-if="fragments.length === 0" class="empty">Nothing here yet. Start with one small thought.</p>
+    <section class="timeline" :aria-label="t('fragmentsForDay')">
+      <p v-if="!loading && fragments.length > 0" class="fragment-count">{{ t('fragmentCount', { count: fragments.length, word: fragments.length === 1 ? t('fragmentSingular') : t('fragmentPlural') }) }}</p>
+      <p v-if="loading" class="empty">{{ t('openingPage') }}</p>
+      <p v-else-if="fragments.length === 0" class="empty">{{ t('nothingYet') }}</p>
       <FragmentEntry v-for="fragment in fragments" :key="fragment.id" :fragment="fragment" @update="update" @remove="remove" />
     </section>
     </div>
