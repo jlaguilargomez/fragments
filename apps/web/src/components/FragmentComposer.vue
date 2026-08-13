@@ -92,7 +92,8 @@ onUnmounted(() => { discardRecording = true; if (recorder && recorder.state !== 
 <template>
   <form class="composer" :class="{ compact }" @submit.prevent="submit">
     <div v-if="!compact && transcribeFragment && captureMode === 'manual'" class="voice-alternative">
-      <span class="voice-alternative-copy"><span class="voice-alternative-icon" aria-hidden="true">●</span><span><strong>{{ t('voiceAlternative') }}</strong><small>{{ t('voiceAlternativeHint') }}</small></span></span>
+      <span class="voice-alternative-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><rect x="8" y="3" width="8" height="12" rx="4"></rect><path d="M5 11a7 7 0 0 0 14 0M12 18v3M8 21h8"></path></svg></span>
+      <span class="voice-alternative-copy"><strong>{{ t('voiceAlternative') }}</strong><small>{{ t('voiceAlternativeHint') }}</small></span>
       <button class="voice-alternative-button" type="button" @click="selectMode('voice')">{{ t('recordAndTranscribe') }}</button>
     </div>
 
