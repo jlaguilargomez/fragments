@@ -48,18 +48,18 @@ button { cursor: pointer; }
 .page-heading { margin-bottom: 32px; }
 .eyebrow { margin: 0 0 14px; color: #303030; font-size: 16px; font-weight: 500; text-transform: uppercase; letter-spacing: .04em; }
 .day-nav { display: grid; grid-template-columns: 58px minmax(0, 1fr) 58px; align-items: stretch; min-height: 68px; border: 1px solid #cfcfcf; border-radius: 8px; overflow: hidden; }
-.day-summary { display: flex; min-width: 0; align-items: center; gap: 44px; padding: 0 18px; border-left: 1px solid #cfcfcf; border-right: 1px solid #cfcfcf; }
-.day-nav h1 { margin: 0; font-size: 32px; line-height: 1; letter-spacing: -.04em; font-weight: 700; }
+.day-summary { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, auto); min-width: 0; align-items: center; gap: 20px; padding: 0 18px; border-left: 1px solid #cfcfcf; border-right: 1px solid #cfcfcf; }
+.day-nav h1 { min-width: 0; margin: 0; overflow: hidden; font-size: 32px; line-height: 1; letter-spacing: -.04em; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
 .day-button {
   border: 0; border-radius: 0; padding: 0; color: #171717;
   background: transparent; font-size: 28px; line-height: 1; transition: background .12s ease, color .12s ease;
 }
 .day-button:hover { background: #f4f4f4; color: #000; }
-.date-label { min-width: 0; margin: 0; overflow: hidden; color: #858585; font-size: 15px; text-overflow: ellipsis; text-transform: capitalize; white-space: nowrap; }
+.date-label { min-width: 0; max-width: 100%; margin: 0; overflow: hidden; color: #858585; font-size: 15px; text-overflow: ellipsis; text-transform: capitalize; white-space: nowrap; }
 
 .capture { border: 0; border-radius: 0; padding: 0; }
 .capture:focus-within { border: 0; box-shadow: none; padding: 0; margin: 0; }
-.composer input, .composer textarea { display: block; border: 0; width: 100%; background: transparent; color: inherit; outline: none; }
+.composer input, .composer textarea { display: block; width: 100%; border: 0; background: transparent; color: inherit; outline: none; }
 .composer-title-label { display: block; margin-bottom: 10px; font-size: 17px; font-weight: 500; }
 .composer input { padding: 15px 18px; border: 1px solid #cfcfcf; border-radius: 8px; font-size: 16px; letter-spacing: -.01em; }
 .composer input::placeholder { color: #858585; }
@@ -72,7 +72,7 @@ button { cursor: pointer; }
 .voice-status { color: #414141; font-variant-numeric: tabular-nums; }
 .recording-indicator { width: 9px; height: 9px; border-radius: 50%; background: #d44c47; }.recording-indicator.paused { background: #9b9a97; }
 .voice-error { flex-basis: 100%; margin: 0; color: #d44c47; }
-.save-button { border: 0; border-radius: 8px; padding: 12px 20px; background: #171717; color: #fff; font-size: 15px; font-weight: 600; transition: background .12s ease; }
+.save-button { max-width: 100%; border: 0; border-radius: 8px; padding: 12px 20px; background: #171717; color: #fff; font-size: 15px; font-weight: 600; transition: background .12s ease; }
 .save-button:hover { background: #000; }
 .text-button { appearance: none; border: 0; padding: 4px 5px; border-radius: 3px; color: #414141; background: transparent; font-size: inherit; }
 .text-button:hover { color: #37352f; background: #f1f1ef; }.danger:hover { color: #d44c47; background: #fdf1f0; }
@@ -95,5 +95,19 @@ button { cursor: pointer; }
 @media (max-width: 600px) {
   .topbar { height: 64px; min-width: 0; gap: 12px; padding: 0 12px; }.brand { flex: 1 1 auto; gap: 9px; font-size: 18px; }.brand-mark { flex: 0 0 auto; width: 34px; height: 34px; }.account-area { flex: 0 0 auto; gap: 5px; font-size: 12px; }.account-area > span:first-child, .account-area .account-divider { display: none; }.account-area .text-button { padding: 4px 3px; white-space: nowrap; }.language-picker select { width: auto; min-width: 82px; height: 32px; padding: 4px 6px; }.page { width: min(100% - 32px, 1080px); padding-top: 32px; }.page-heading { margin-bottom: 28px; }.eyebrow { font-size: 15px; margin-bottom: 12px; }
   .help-heading { margin-bottom: 38px; }.help-heading h1 { font-size: 36px; }.help-intro { font-size: 16px; }.help-section { padding: 22px 0 24px; }
-  .day-nav { grid-template-columns: 46px minmax(0, 1fr) 46px; min-height: 60px; }.day-summary { gap: 12px; padding: 0 12px; }.day-nav h1 { flex: 0 0 auto; font-size: 26px; }.date-label { flex: 1 1 auto; font-size: 13px; }.day-button { font-size: 26px; }.composer-title-label { font-size: 16px; }.composer input { padding: 14px 15px; font-size: 16px; }.composer textarea { min-height: 190px; margin-top: 20px; padding: 15px; }.composer-actions { margin-top: 18px; }.save-button { padding: 11px 16px; font-size: 15px; }.timeline { margin-top: 32px; padding-top: 22px; }.fragment-count { font-size: 15px; }.fragment-entry { grid-template-columns: 1fr; gap: 5px; padding: 13px 0; }.fragment-entry time { padding: 0; }.entry-actions { opacity: 1; }
+  .day-nav { grid-template-columns: 46px minmax(0, 1fr) 46px; min-height: 60px; }.day-summary { gap: 10px; padding: 0 12px; }.day-nav h1 { font-size: 26px; }.date-label { font-size: 13px; }.day-button { font-size: 26px; }.composer-title-label { font-size: 16px; }.composer input { padding: 14px 15px; font-size: 16px; }.composer textarea { min-height: 190px; margin-top: 20px; padding: 15px; }.composer-actions { margin-top: 18px; }.save-button { padding: 11px 16px; font-size: 15px; }.timeline { margin-top: 32px; padding-top: 22px; }.fragment-count { font-size: 15px; }.fragment-entry { grid-template-columns: 1fr; gap: 5px; padding: 13px 0; }.fragment-entry time { padding: 0; }.entry-actions { opacity: 1; }
+}
+
+@media (max-width: 360px) {
+  .topbar { padding-inline: 10px; }
+  .brand { gap: 7px; font-size: 17px; }
+  .account-area { gap: 2px; }
+  .language-picker select { min-width: 76px; }
+  .page { width: min(100% - 24px, 1080px); }
+  .day-summary { gap: 7px; padding-inline: 9px; }
+  .day-nav h1 { font-size: 23px; }
+  .date-label { font-size: 12px; }
+  .day-nav { grid-template-columns: 40px minmax(0, 1fr) 40px; }
+  .composer-actions { flex-wrap: wrap; }
+  .save-button { width: 100%; }
 }

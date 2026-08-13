@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onUnmounted, ref } from 'vue';
+import { computed, onUnmounted, ref, useId } from 'vue';
 import { t, translateError } from '../i18n';
 const emit = defineEmits<{ save: [input: { title: string; content: string }]; cancel: [] }>();
 const props = withDefaults(defineProps<{
@@ -11,6 +11,7 @@ const props = withDefaults(defineProps<{
   transcribeFragment?: (audio: Blob) => Promise<boolean>;
 }>(), { initialTitle: '', initialContent: '', submitLabel: 'Save fragment', compact: false, saveFragment: undefined });
 const MAX_RECORDING_SECONDS = 300;
+const titleId = useId();
 const title = ref(props.initialTitle ?? '');
 const content = ref(props.initialContent);
 const recordingState = ref<'idle' | 'recording' | 'paused' | 'transcribing'>('idle');
@@ -84,8 +85,8 @@ onUnmounted(() => { discardRecording = true; if (recorder && recorder.state !== 
 
 <template>
   <form class="composer" :class="{ compact }" @submit.prevent="submit">
-    <label class="composer-title-label" for="fragment-title">{{ t('titleOptional') }}</label>
-    <input id="fragment-title" v-model="title" :aria-label="t('fragmentTitle')" :placeholder="t('whatMind')" maxlength="200" />
+    <label class="composer-title-label" :for="titleId">{{ t('titleOptional') }}</label>
+    <input :id="titleId" v-model="title" :aria-label="t('fragmentTitle')" :placeholder="t('whatMind')" maxlength="200" />
     <textarea v-model="content" :aria-label="t('fragmentContent')" :placeholder="t('whatMind')" :rows="compact ? 4 : 7" maxlength="20000" required />
     <div v-if="!compact && transcribeFragment" class="voice-capture" aria-live="polite">
       <template v-if="recordingState === 'idle'">
