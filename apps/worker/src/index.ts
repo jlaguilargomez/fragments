@@ -6,6 +6,7 @@ export interface Env {
   DB: D1Database;
   ASSETS: Fetcher;
   AI: Ai;
+  SIGNUP_INVITE_CODE?: string;
 }
 
 type FragmentRow = {
@@ -58,7 +59,7 @@ function createD1FragmentRepository(database: D1Database): FragmentRepository & 
 const dateSchema = z.iso.date();
 const createSchema = z.object({ title: z.string().max(200_000).nullable().optional(), content: z.string().min(1).max(200_000), date: z.iso.date() });
 const updateSchema = z.object({ title: z.string().max(200_000).nullable().optional(), content: z.string().min(1).max(200_000).optional() }).refine(value => value.title !== undefined || value.content !== undefined, 'At least one field is required');
-const credentialsSchema = z.object({ email: z.string().email(), password: z.string().min(12) });
+const credentialsSchema = z.object({ email: z.string().email(), password: z.string().min(12), inviteCode: z.string().optional() });
 const voiceDateSchema = z.object({ date: z.iso.date() });
 const COOKIE = 'fragments_session';
 const MAX_AUDIO_BYTES = 10 * 1024 * 1024;
@@ -74,7 +75,11 @@ async function handleApi(request: Request, env: Env): Promise<Response> {
 
   const repository = createD1FragmentRepository(env.DB);
   try {
-    if (url.pathname === '/api/auth/signup' && request.method === 'POST') { const result = await signUp(repository, credentialsSchema.parse(await request.json())); return withCookie(json(result.session, 201), result.token); }
+    if (url.pathname === '/api/auth/signup' && request.method === 'POST') {
+      const credentials = credentialsSchema.parse(await request.json());
+      if (env.SIGNUP_INVITE_CODE && credentials.inviteCode !== env.SIGNUP_INVITE_CODE) return json({ error: 'Invalid invitation code' }, 403);
+      const result = await signUp(repository, credentials); return withCookie(json(result.session, 201), result.token);
+    }
     if (url.pathname === '/api/auth/login' && request.method === 'POST') { const result = await login(repository, credentialsSchema.parse(await request.json())); return withCookie(json(result.session), result.token); }
     if (url.pathname === '/api/auth/session' && request.method === 'GET') { const session = await getSession(repository, cookieFrom(request)); return json(session ?? null); }
     if (url.pathname === '/api/auth/logout' && request.method === 'POST') { await logout(repository, cookieFrom(request)); return clearCookie(new Response(null, { status: 204 })); }

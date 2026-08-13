@@ -22,9 +22,14 @@ An important long-term personal use is collecting memories and reflections, alon
 - **AI assists invisibly.** Future AI should preserve the author's voice; it must not invent or aggressively reinterpret content.
 - **Learn through the code.** Architecture, decisions, and trade-offs are part of the product documentation.
 
-## Current status — Iteration 4 complete locally, remotely, and in production preview
+## Current status — Trial and premium environments
 
 The local MVP supports the complete text-fragment workflow:
+
+- The default `npm run dev` command runs an offline trial with no login or API.
+- Trial text fragments persist in versioned browser `localStorage`; GitHub Pages
+  uses the same static mode and never consumes Cloudflare resources.
+- `npm run dev:premium` runs the authenticated Express/SQLite version locally.
 
 - Create a fragment with optional title and required content.
 - Store fragments durably in SQLite.
@@ -60,11 +65,11 @@ The voice flow and client-side note encryption are implemented and pass local ty
 checks, builds, and API tests. The D1 migration was applied remotely, the `AI`
 binding is active, and the Worker was deployed from commit `1a07924`.
 
-The current remote technical preview is:
+The premium deployment is:
 
 `https://fragments.jlaguigom-ai.workers.dev`
 
-It is a technical preview. Authentication and ownership are active, but email
+It is private by invitation. Authentication and ownership are active, but email
 verification and password recovery are not implemented. Losing the account password
 also loses access to encrypted notes. Existing notes become encrypted progressively
 when opened after this release. Voice transcription remains a privacy exception:
@@ -79,7 +84,7 @@ The latest verified UI and deployment state is commit `1a07924` on `master`.
 | --- | --- |
 | Web | Vue 3, TypeScript, Vite, Composition API |
 | API | Node.js/Express locally; Cloudflare Worker remotely |
-| Persistence | SQLite via `better-sqlite3` locally; Cloudflare D1 remotely |
+| Persistence | Browser `localStorage` for trial; SQLite locally and Cloudflare D1 remotely for premium |
 | Validation | Zod at the API boundary |
 | Password storage | PBKDF2-HMAC-SHA256, 100,000 iterations, shared by Node and Workers |
 | Note encryption | Browser AES-GCM; PBKDF2-derived key with 250,000 iterations; key is never sent to the API |
@@ -92,26 +97,28 @@ The latest verified UI and deployment state is commit `1a07924` on `master`.
 | GitHub repository | The repository URL is maintained by the project owner. |
 | Latest verified release | `1a07924` — client-side end-to-end note encryption |
 
-The local web application normally runs on port `5173`; Vite may select the next
-available port if it is occupied. Its API runs on port `3001`, with Vite proxying
-`/auth` and `/fragments`. Port `3000` is deliberately avoided because it is
-occupied by another local service in this environment. The remote application is
-served by a same-origin Cloudflare Worker with D1.
+The trial web application normally runs on port `5173`; Vite may select the next
+available port if it is occupied. Premium local development additionally runs
+Express on port `3001`, with Vite proxying `/auth` and `/fragments`. The remote
+premium application is served by a same-origin Cloudflare Worker with D1.
 
 ### Published environments
 
-A GitHub Actions workflow prepares a **visual-only demo** for GitHub Pages. It uses sample fragments and keeps edits only for the active browser session, because GitHub Pages cannot run the Express API or persist SQLite data.
+A GitHub Actions workflow prepares the **offline trial** for GitHub Pages. It
+seeds welcome fragments once and persists edits in each visitor's browser.
 
 Before the workflow can deploy, GitHub Pages must be enabled in the repository settings and configured to use **GitHub Actions** as its source. Expected URL once enabled:
 
 The GitHub Pages URL is maintained by the project owner and deployment settings.
 
-The functional remote preview is deployed separately with Wrangler to:
+The premium application is deployed separately with Wrangler to:
 
 `https://fragments.jlaguigom-ai.workers.dev`
 
 It serves the compiled Vue assets and the Worker API. D1 migrations are applied
-explicitly with `npm run db:migrate:remote -w @fragments/worker`.
+explicitly with `npm run db:migrate:remote -w @fragments/worker`. Setting the
+`SIGNUP_INVITE_CODE` Worker secret closes public registration without changing
+login or account persistence.
 
 ## Deliberate non-goals for the current product
 

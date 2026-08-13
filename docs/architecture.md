@@ -1,97 +1,59 @@
 # Architecture
 
-Fragments is a small npm-workspaces monorepo. The browser can call either the
-local Express runtime or the Cloudflare Worker runtime. Both runtimes share the
-same asynchronous application functions and repository contracts, while their
-database adapters remain separate.
+Fragments has one Vue frontend with two persistence modes. The trial is fully
+offline; premium uses the existing authenticated server path.
 
 ```mermaid
 flowchart LR
   B[Browser] --> V[Vue web app]
+  V --> T[Trial adapter]
+  T --> L[(localStorage per browser origin)]
   V --> C[AES-GCM encryption/decryption]
-  C -->|Ciphertext over HTTP JSON| E[Express API]
-  C -->|Ciphertext over HTTP JSON| W[Cloudflare Worker]
-  E --> A[Shared application functions]
-  W --> A
-  A --> S[Repository contract]
-  S --> L[SQLite adapter]
-  S --> D[D1 adapter]
-  L --> F[(Local SQLite file)]
-  D --> Q[(Cloudflare D1)]
+  C --> E[Express API]
+  C --> W[Cloudflare Worker]
+  E --> S[(Local SQLite)]
+  W --> D[(Cloudflare D1)]
+  W --> A[Workers AI Whisper]
 ```
+
+## Runtime modes
+
+`VITE_TRIAL_MODE=true` selects the local adapter. It requires no session, API or
+network request. Its versioned `fragments-trial-v1` store is grouped by date,
+seeded once with welcome fragments, and updated after every create, edit or
+delete. Data is isolated by browser origin, so localhost and GitHub Pages do not
+share it. Clearing site data deletes the trial data.
+
+Without trial mode, the frontend uses the authenticated API adapter. The local
+premium command calls Express and SQLite; the deployed premium build calls the
+same-origin Worker and D1. Both server runtimes share the asynchronous use cases
+and repository contracts.
+
+Premium note titles and contents are encrypted in the browser before persistence.
+The encryption key is derived from the user's password and remains in browser
+memory. Voice uploads are a premium-only exception: the Worker sends temporary
+audio to Workers AI, discards the audio and stores the resulting text fragment.
+
+## Authentication
+
+Premium login uses server-side sessions represented by 30-day HttpOnly cookies.
+The Worker accepts an optional `SIGNUP_INVITE_CODE` secret. When configured, the
+signup endpoint requires a matching `inviteCode`; login is unaffected. Omitting
+the secret restores public signup without changing the API shape.
 
 ## Repository structure
 
 | Area | Responsibility |
 | --- | --- |
-| `apps/web` | Reading and writing UI, date navigation, API client. |
-| `packages/server-core` | Async application functions and repository contracts shared by both runtimes. |
-| `apps/api/src/presentation` | Local Express routes, DTO validation, status codes, error translation. |
-| `apps/api/src/infrastructure` | Local SQLite connection, migrations and prepared SQL statements. |
-| `apps/worker` | Cloudflare Worker entrypoint, D1 adapter, Wrangler config and migrations. |
-| `packages/shared` | Types exchanged by the browser and API. |
-
-This is a pragmatic separation, not a framework. The application functions depend
-on a minimal repository interface because it makes the storage boundary explicit;
-no generic repository framework or dependency-injection container is introduced.
-
-## Request flow
-
-When a person saves a fragment, `FragmentComposer.vue` calls `api.ts`. Before the
-request, `apps/web/src/encryption.ts` encrypts the title and content with AES-GCM.
-The local Express route or the Worker route validates and stores the opaque
-ciphertext; it does not need the user's encryption key. The browser decrypts the
-response after loading it. A key is derived from the login password with PBKDF2 and
-kept in browser memory only.
-
-Legacy plaintext fragments are detected by the client and rewritten as ciphertext
-after successful decryption. This migration is lazy so it preserves existing IDs
-and timestamps and does not require a database rebuild.
-
-`GET /fragments?date=YYYY-MM-DD` filters on the ISO creation date and sorts ascending. ISO timestamps make the current ordering unambiguous. The browser selects dates in its local timezone; the current MVP stores timestamps in UTC, so entries made around midnight may appear under their UTC day. This is a known product decision to revisit once timezone semantics are specified.
-
-Voice capture uses `MediaRecorder` and sends a bounded `multipart/form-data` upload
-to `POST /fragments/voice`. The Worker validates the authenticated request, sends the
-in-memory audio bytes to Workers AI Whisper, and persists the returned text as a
-temporary plaintext `voice` fragment. The browser immediately replaces that result
-with encrypted fields. This is intentionally documented as a privacy exception;
-full E2EE voice capture requires local transcription. The local Express route accepts
-an injected transcriber for tests; the default local runtime reports that voice
-transcription is unavailable because it does not have a Workers AI binding.
-
-## API
-
-| Method | Path | Result |
-| --- | --- | --- |
-| `POST` | `/fragments` | Creates a text fragment (201). |
-| `GET` | `/fragments?date=YYYY-MM-DD` | Returns that day's fragments in chronological order. |
-| `GET` | `/fragments/:id` | Returns one fragment or 404. |
-| `PATCH` | `/fragments/:id` | Edits title and/or content. |
-| `DELETE` | `/fragments/:id` | Removes it (204). |
-| `POST` | `/fragments/voice` | Transcribes a temporary audio upload into a voice fragment (201). |
-
-Malformed request data receives 400, missing fragments receive 404, and unexpected failures receive 500. Titles are optional, content is required, and the API accepts up to 200,000 characters to accommodate ciphertext; the browser still limits ordinary note input to 20,000 characters.
-
-## Persistence
-
-The versioned schema includes `users`, `sessions` and `fragments`; `fragments.user_id`
-is nullable until the authentication iteration assigns ownership. `source` supports
-both text and voice fragments. Voice uploads are transcribed in memory and the
-original audio is discarded. Note `title` and `content` are opaque ciphertext after
-client migration; dates, ownership, source and approximate ciphertext size remain
-visible to the server. Local migrations are applied through
-`apps/api/src/infrastructure/sqlite-migrations.ts`. D1 migrations live in
-`apps/worker/migrations` and are applied with Wrangler. Local data is not implicitly
-copied to D1; migration is an explicit export/import operation.
-
-## External dependencies
-
-Vue and Vite provide the browser UI. Express exposes the local API. The Worker
-exposes the remote API and serves the built assets. Zod owns API boundary
-validation. `better-sqlite3` provides local synchronous prepared statements, while
-D1 provides asynchronous prepared statements through `env.DB`. Both adapters
-implement the same async repository contract.
+| `apps/web` | Vue UI, trial storage, premium API client and encryption. |
+| `apps/api` | Local Express routes and SQLite adapter. |
+| `apps/worker` | Cloudflare Worker, D1 adapter, AI binding and migrations. |
+| `packages/server-core` | Shared application functions and persistence contracts. |
+| `packages/shared` | Browser/API TypeScript types. |
 
 ## Testing strategy
 
-The API tests exercise useful vertical behaviours through HTTP: creation plus date retrieval, input validation, and not-found handling. This gives confidence across validation, application logic, and the real SQLite queries without chasing a coverage target. UI visual and interaction tests can be added when its behaviour becomes more complex.
+API tests cover premium HTTP behaviour, authentication, ownership, validation
+and voice handling. Type checks and builds cover both frontend modes and the
+Worker bundle. The GitHub Pages build is static and must not depend on `/api`,
+`/auth` or `/fragments` requests.

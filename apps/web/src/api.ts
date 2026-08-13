@@ -2,59 +2,87 @@ import type { AuthCredentials, AuthSession, CreateFragmentInput, Fragment, Updat
 
 const baseUrl = import.meta.env.VITE_API_URL ?? '';
 const apiPrefix = baseUrl ? '' : (import.meta.env.DEV ? '' : '/api');
-export const isVisualDemo = import.meta.env.VITE_VISUAL_DEMO === 'true';
+export const isTrialMode = import.meta.env.VITE_TRIAL_MODE === 'true';
+export const signupEnabled = import.meta.env.VITE_ENABLE_SIGNUP === 'true';
 
-const demoFragments: Fragment[] = [
+const TRIAL_STORAGE_KEY = 'fragments-trial-v1';
+
+function welcomeFragments(): Fragment[] {
+  const now = new Date();
+  const day = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  return [
   {
     id: 'demo-morning-walk',
     title: 'Morning walk',
     content: 'Marco stopped to look at a ladybug on the way to school. He said it was wearing a tiny red coat.',
     source: 'text',
-    createdAt: new Date().toISOString().replace(/T.*/, 'T08:42:00.000Z'),
-    updatedAt: new Date().toISOString().replace(/T.*/, 'T08:42:00.000Z')
+    createdAt: `${day}T08:42:00.000Z`,
+    updatedAt: `${day}T08:42:00.000Z`
   },
   {
     id: 'demo-idea',
     title: 'A small idea',
     content: 'Make room for thoughts before asking them to become useful.',
     source: 'text',
-    createdAt: new Date().toISOString().replace(/T.*/, 'T11:16:00.000Z'),
-    updatedAt: new Date().toISOString().replace(/T.*/, 'T11:16:00.000Z')
+    createdAt: `${day}T11:16:00.000Z`,
+    updatedAt: `${day}T11:16:00.000Z`
   }
-];
-
-function today(): string {
-  return new Date().toISOString().slice(0, 10);
+  ];
 }
 
+type TrialStore = { version: 1; fragmentsByDate: Record<string, Fragment[]> };
+function groupByDate(fragments: Fragment[]): TrialStore {
+  return { version: 1, fragmentsByDate: fragments.reduce<Record<string, Fragment[]>>((groups, fragment) => {
+    (groups[fragment.createdAt.slice(0, 10)] ??= []).push(fragment);
+    return groups;
+  }, {}) };
+}
+function flatten(store: TrialStore): Fragment[] { return Object.values(store.fragmentsByDate).flat(); }
+function isFragment(value: unknown): value is Fragment {
+  if (!value || typeof value !== 'object') return false;
+  const fragment = value as Partial<Fragment>;
+  return typeof fragment.id === 'string' && (fragment.title === null || typeof fragment.title === 'string') && typeof fragment.content === 'string' && (fragment.source === 'text' || fragment.source === 'voice') && typeof fragment.createdAt === 'string' && typeof fragment.updatedAt === 'string';
+}
+function readTrialStore(): TrialStore {
+  const fallback = groupByDate(welcomeFragments());
+  try {
+    const raw = localStorage.getItem(TRIAL_STORAGE_KEY);
+    if (!raw) { localStorage.setItem(TRIAL_STORAGE_KEY, JSON.stringify(fallback)); return fallback; }
+    const parsed = JSON.parse(raw) as Partial<TrialStore>;
+    if (parsed.version !== 1 || !parsed.fragmentsByDate || typeof parsed.fragmentsByDate !== 'object' || !Object.values(parsed.fragmentsByDate).every(value => Array.isArray(value) && value.every(isFragment))) throw new Error('Invalid trial storage');
+    return { version: 1, fragmentsByDate: parsed.fragmentsByDate as Record<string, Fragment[]> };
+  } catch { return fallback; }
+}
+function writeTrialStore(store: TrialStore): void {
+  try { localStorage.setItem(TRIAL_STORAGE_KEY, JSON.stringify(store)); } catch { /* Storage can be unavailable. */ }
+}
+let trialStore = readTrialStore();
+
 const demoApi = {
-  list(date: string) { return Promise.resolve(date === today() ? [...demoFragments] : []); },
+  list(date: string) { return Promise.resolve([...(trialStore.fragmentsByDate[date] ?? [])]); },
   create(input: CreateFragmentInput) {
     const now = new Date().toISOString();
     const fragment: Fragment = { id: crypto.randomUUID(), title: input.title?.trim() || null, content: input.content.trim(), source: 'text', createdAt: `${input.date}T${now.slice(11)}`, updatedAt: now };
-    demoFragments.push(fragment);
+    trialStore = groupByDate([...flatten(trialStore), fragment]); writeTrialStore(trialStore);
     return Promise.resolve(fragment);
   },
   update(id: string, input: UpdateFragmentInput) {
-    const fragment = demoFragments.find((candidate) => candidate.id === id);
+    const fragment = flatten(trialStore).find((candidate) => candidate.id === id);
     if (!fragment) return Promise.reject(new Error('Fragment not found'));
     if (input.title !== undefined) fragment.title = input.title?.trim() || null;
     if (input.content !== undefined) fragment.content = input.content.trim();
     fragment.updatedAt = new Date().toISOString();
+    trialStore = groupByDate(flatten(trialStore)); writeTrialStore(trialStore);
     return Promise.resolve(fragment);
   },
   remove(id: string) {
-    const index = demoFragments.findIndex((fragment) => fragment.id === id);
+    const fragments = flatten(trialStore);
+    const index = fragments.findIndex((fragment) => fragment.id === id);
     if (index === -1) return Promise.reject(new Error('Fragment not found'));
-    demoFragments.splice(index, 1);
+    fragments.splice(index, 1); trialStore = groupByDate(fragments); writeTrialStore(trialStore);
     return Promise.resolve();
   },
-  transcribe(_audio: Blob, date: string) {
-    const now = new Date().toISOString();
-    const fragment: Fragment = { id: crypto.randomUUID(), title: null, content: 'A voice fragment from the visual demo.', source: 'voice', createdAt: `${date}T${now.slice(11)}`, updatedAt: now };
-    demoFragments.push(fragment);
-    return Promise.resolve(fragment);
-  }
+  transcribe() { return Promise.reject(new Error('Voice transcription is unavailable in trial mode.')); }
 };
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -88,7 +116,6 @@ const authApi = {
   logout() { return request<void>(`${apiPrefix}/auth/logout`, { method: 'POST' }); }
 };
 
-// GitHub Pages can only host static files. Its demo keeps interactions useful
-// in the current tab, without pretending that entries are durably stored.
-export const fragmentsApi = isVisualDemo ? demoApi : liveApi;
+// The trial adapter is static-host friendly; the live adapter is used by premium.
+export const fragmentsApi = isTrialMode ? demoApi : liveApi;
 export { authApi };

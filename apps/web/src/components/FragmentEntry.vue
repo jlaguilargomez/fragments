@@ -17,8 +17,8 @@ const editing = ref(false);
       <h2 v-if="fragment.title">{{ fragment.title }}</h2>
       <p>{{ fragment.content }}</p>
       <div class="entry-actions">
-        <button class="text-button" @click="editing = true">{{ t('edit') }}</button>
-        <button class="text-button danger" @click="emit('remove', fragment.id)">{{ t('delete') }}</button>
+        <button class="entry-action-button" @click="editing = true">{{ t('edit') }}</button>
+        <button class="entry-action-button danger" @click="emit('remove', fragment.id)">{{ t('delete') }}</button>
       </div>
     </div>
   </article>
