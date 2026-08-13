@@ -91,13 +91,9 @@ onUnmounted(() => { discardRecording = true; if (recorder && recorder.state !== 
 
 <template>
   <form class="composer" :class="{ compact }" @submit.prevent="submit">
-    <div v-if="!compact && transcribeFragment" class="capture-modes" role="tablist" :aria-label="t('captureOptions')">
-      <button class="mode-card" :class="{ selected: captureMode === 'manual' }" type="button" role="tab" :aria-selected="captureMode === 'manual'" @click="selectMode('manual')">
-        <span class="mode-icon" aria-hidden="true">✎</span><span class="mode-copy"><strong>{{ t('writeManually') }}</strong><small>{{ t('writeManuallyHint') }}</small></span><span v-if="captureMode === 'manual'" class="mode-check" aria-hidden="true">✓</span>
-      </button>
-      <button class="mode-card" :class="{ selected: captureMode === 'voice' }" type="button" role="tab" :aria-selected="captureMode === 'voice'" @click="selectMode('voice')">
-        <span class="mode-icon voice-mode-icon" aria-hidden="true">●</span><span class="mode-copy"><strong>{{ t('recordAndTranscribe') }}</strong><small>{{ t('recordAndTranscribeHint') }}</small></span><span v-if="captureMode === 'voice'" class="mode-check" aria-hidden="true">✓</span>
-      </button>
+    <div v-if="!compact && transcribeFragment && captureMode === 'manual'" class="voice-alternative">
+      <span class="voice-alternative-copy"><span class="voice-alternative-icon" aria-hidden="true">●</span><span><strong>{{ t('voiceAlternative') }}</strong><small>{{ t('voiceAlternativeHint') }}</small></span></span>
+      <button class="voice-alternative-button" type="button" @click="selectMode('voice')">{{ t('recordAndTranscribe') }}</button>
     </div>
 
     <template v-if="captureMode === 'manual' || !transcribeFragment || compact">
@@ -107,7 +103,7 @@ onUnmounted(() => { discardRecording = true; if (recorder && recorder.state !== 
       <div class="composer-actions"><button v-if="compact" class="text-button" type="button" @click="emit('cancel')">{{ t('cancel') }}</button><button class="save-button" type="submit" :disabled="recordingState !== 'idle'">{{ submitLabel === 'Save fragment' ? t('saveFragment') : submitLabel === 'Save changes' ? t('saveChanges') : submitLabel }}</button></div>
     </template>
     <div v-else class="voice-capture voice-capture-panel" aria-live="polite">
-      <template v-if="recordingState === 'idle'"><span class="voice-panel-icon" aria-hidden="true">●</span><div class="voice-panel-copy"><strong>{{ t('voiceReadyTitle') }}</strong><span>{{ t('voiceReadyHint') }}</span></div><button class="record-button" type="button" @click="startRecording"><span aria-hidden="true">●</span>{{ t('startRecording') }}</button></template>
+      <template v-if="recordingState === 'idle'"><span class="voice-panel-icon" aria-hidden="true">●</span><div class="voice-panel-copy"><strong>{{ t('voiceReadyTitle') }}</strong><span>{{ t('voiceReadyHint') }}</span></div><button class="record-button" type="button" @click="startRecording"><span aria-hidden="true">●</span>{{ t('startRecording') }}</button><button class="text-button voice-back-button" type="button" @click="selectMode('manual')">{{ t('backToWriting') }}</button></template>
       <template v-else-if="recordingState === 'transcribing'"><span class="voice-panel-icon is-loading" aria-hidden="true">●</span><div class="voice-panel-copy"><strong>{{ t('transcribing') }}</strong><span>{{ t('transcribingHint') }}</span></div></template>
       <template v-else><span class="recording-indicator" :class="{ paused: recordingState === 'paused' }" aria-hidden="true"></span><span class="voice-status">{{ recordingState === 'paused' ? t('paused') : t('recording') }} · {{ recordingLabel }}</span><button class="text-button" type="button" @click="togglePause">{{ recordingState === 'paused' ? t('resume') : t('pause') }}</button><button class="record-button" type="button" @click="stopRecording">{{ t('useRecording') }}</button><button class="text-button danger" type="button" @click="cancelRecording">{{ t('cancel') }}</button></template>
       <p v-if="recordingError" class="voice-error" role="alert">{{ recordingError }}</p>
