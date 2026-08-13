@@ -14,6 +14,7 @@ const MAX_RECORDING_SECONDS = 300;
 const titleId = useId();
 const title = ref(props.initialTitle ?? '');
 const content = ref(props.initialContent);
+const captureMode = ref<'manual' | 'voice'>('manual');
 const recordingState = ref<'idle' | 'recording' | 'paused' | 'transcribing'>('idle');
 const recordingError = ref('');
 const elapsedSeconds = ref(0);
@@ -73,6 +74,11 @@ async function startRecording() {
     timer = window.setInterval(() => { elapsedSeconds.value += 1; if (elapsedSeconds.value >= MAX_RECORDING_SECONDS) stopRecording(); }, 1000);
   } catch (caught) { clearRecordingResources(); recordingError.value = translateError(caught, 'microphonePermission'); }
 }
+function selectMode(mode: 'manual' | 'voice') {
+  if (recordingState.value !== 'idle') return;
+  captureMode.value = mode;
+  recordingError.value = '';
+}
 function togglePause() {
   if (!recorder) return;
   if (recordingState.value === 'recording') { recorder.pause(); recordingState.value = 'paused'; }
@@ -85,29 +91,26 @@ onUnmounted(() => { discardRecording = true; if (recorder && recorder.state !== 
 
 <template>
   <form class="composer" :class="{ compact }" @submit.prevent="submit">
-    <label class="composer-title-label" :for="titleId">{{ t('titleOptional') }}</label>
-    <input :id="titleId" v-model="title" :aria-label="t('fragmentTitle')" :placeholder="t('whatMind')" maxlength="200" />
-    <textarea v-model="content" :aria-label="t('fragmentContent')" :placeholder="t('whatMind')" :rows="compact ? 4 : 7" maxlength="20000" required />
-    <div v-if="!compact && transcribeFragment" class="voice-capture" aria-live="polite">
-      <template v-if="recordingState === 'idle'">
-        <button class="text-button voice-button" type="button" @click="startRecording">{{ t('recordVoice') }}</button>
-        <span class="voice-hint">{{ t('shortRecordings') }}</span>
-      </template>
-      <template v-else-if="recordingState === 'transcribing'">
-        <span class="voice-status">{{ t('transcribing') }}</span>
-      </template>
-      <template v-else>
-        <span class="recording-indicator" :class="{ paused: recordingState === 'paused' }" aria-hidden="true"></span>
-        <span class="voice-status">{{ recordingState === 'paused' ? t('paused') : t('recording') }} · {{ recordingLabel }}</span>
-        <button class="text-button" type="button" @click="togglePause">{{ recordingState === 'paused' ? t('resume') : t('pause') }}</button>
-        <button class="text-button" type="button" @click="stopRecording">{{ t('useRecording') }}</button>
-        <button class="text-button danger" type="button" @click="cancelRecording">{{ t('cancel') }}</button>
-      </template>
-      <p v-if="recordingError" class="voice-error" role="alert">{{ recordingError }}</p>
+    <div v-if="!compact && transcribeFragment" class="capture-modes" role="tablist" :aria-label="t('captureOptions')">
+      <button class="mode-card" :class="{ selected: captureMode === 'manual' }" type="button" role="tab" :aria-selected="captureMode === 'manual'" @click="selectMode('manual')">
+        <span class="mode-icon" aria-hidden="true">✎</span><span class="mode-copy"><strong>{{ t('writeManually') }}</strong><small>{{ t('writeManuallyHint') }}</small></span><span v-if="captureMode === 'manual'" class="mode-check" aria-hidden="true">✓</span>
+      </button>
+      <button class="mode-card" :class="{ selected: captureMode === 'voice' }" type="button" role="tab" :aria-selected="captureMode === 'voice'" @click="selectMode('voice')">
+        <span class="mode-icon voice-mode-icon" aria-hidden="true">●</span><span class="mode-copy"><strong>{{ t('recordAndTranscribe') }}</strong><small>{{ t('recordAndTranscribeHint') }}</small></span><span v-if="captureMode === 'voice'" class="mode-check" aria-hidden="true">✓</span>
+      </button>
     </div>
-    <div class="composer-actions">
-      <button v-if="compact" class="text-button" type="button" @click="emit('cancel')">{{ t('cancel') }}</button>
-      <button class="save-button" type="submit" :disabled="recordingState !== 'idle'">{{ submitLabel === 'Save fragment' ? t('saveFragment') : submitLabel === 'Save changes' ? t('saveChanges') : submitLabel }}</button>
+
+    <template v-if="captureMode === 'manual' || !transcribeFragment || compact">
+      <label class="composer-title-label" :for="titleId">{{ t('titleOptional') }}</label>
+      <input :id="titleId" v-model="title" :aria-label="t('fragmentTitle')" :placeholder="t('whatMind')" maxlength="200" />
+      <textarea v-model="content" :aria-label="t('fragmentContent')" :placeholder="t('whatMind')" :rows="compact ? 4 : 7" maxlength="20000" required />
+      <div class="composer-actions"><button v-if="compact" class="text-button" type="button" @click="emit('cancel')">{{ t('cancel') }}</button><button class="save-button" type="submit" :disabled="recordingState !== 'idle'">{{ submitLabel === 'Save fragment' ? t('saveFragment') : submitLabel === 'Save changes' ? t('saveChanges') : submitLabel }}</button></div>
+    </template>
+    <div v-else class="voice-capture voice-capture-panel" aria-live="polite">
+      <template v-if="recordingState === 'idle'"><span class="voice-panel-icon" aria-hidden="true">●</span><div class="voice-panel-copy"><strong>{{ t('voiceReadyTitle') }}</strong><span>{{ t('voiceReadyHint') }}</span></div><button class="record-button" type="button" @click="startRecording"><span aria-hidden="true">●</span>{{ t('startRecording') }}</button></template>
+      <template v-else-if="recordingState === 'transcribing'"><span class="voice-panel-icon is-loading" aria-hidden="true">●</span><div class="voice-panel-copy"><strong>{{ t('transcribing') }}</strong><span>{{ t('transcribingHint') }}</span></div></template>
+      <template v-else><span class="recording-indicator" :class="{ paused: recordingState === 'paused' }" aria-hidden="true"></span><span class="voice-status">{{ recordingState === 'paused' ? t('paused') : t('recording') }} · {{ recordingLabel }}</span><button class="text-button" type="button" @click="togglePause">{{ recordingState === 'paused' ? t('resume') : t('pause') }}</button><button class="record-button" type="button" @click="stopRecording">{{ t('useRecording') }}</button><button class="text-button danger" type="button" @click="cancelRecording">{{ t('cancel') }}</button></template>
+      <p v-if="recordingError" class="voice-error" role="alert">{{ recordingError }}</p>
     </div>
   </form>
 </template>
