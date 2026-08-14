@@ -116,7 +116,7 @@ async function signOut() { clearEncryption(); await authApi.logout(); session.va
         <p class="eyebrow">{{ t('dailyNotes') }}</p>
         <nav class="day-nav" :aria-label="t('dateNavigation')">
           <button class="day-button" :aria-label="t('previousDay')" @click="selectedDate = shiftDate(selectedDate, -1)">‹</button>
-          <div class="day-summary"><h1 :title="displayDate(selectedDate, locale === 'es' ? 'es-ES' : 'en-US')">{{ selectedDate === toDateKey(new Date()) ? t('today') : displayDayHeading(selectedDate, locale === 'es' ? 'es-ES' : 'en-US') }}</h1><p class="date-label">{{ displayCompactDate(selectedDate, locale === 'es' ? 'es-ES' : 'en-US') }}</p></div>
+          <div class="day-summary"><h1 :title="displayDate(selectedDate, locale === 'es' ? 'es-ES' : 'en-US')">{{ selectedDate === toDateKey(new Date()) ? t('today') : displayDayHeading(selectedDate, locale === 'es' ? 'es-ES' : 'en-US') }}</h1><p v-if="selectedDate === toDateKey(new Date())" class="date-label">{{ displayCompactDate(selectedDate, locale === 'es' ? 'es-ES' : 'en-US') }}</p></div>
           <button class="day-button" :aria-label="t('nextDay')" @click="selectedDate = shiftDate(selectedDate, 1)">›</button>
         </nav>
       </section>
