@@ -19,6 +19,7 @@ button { cursor: pointer; }
 .auth-card label { display: block; margin-top: 18px; color: #787774; font-size: 13px; }
 .auth-card input { display: block; width: 100%; margin-top: 7px; padding: 10px 0; border: 0; border-bottom: 1px solid #d9d9d6; outline: none; color: inherit; background: transparent; }
 .auth-card input:focus { border-color: #37352f; }.auth-card small { display: block; margin-top: 6px; color: #9b9a97; }
+.password-input { display: flex; align-items: end; gap: 10px; border-bottom: 1px solid #d9d9d6; }.password-input input { flex: 1; min-width: 0; margin-bottom: -1px; border-bottom: 0; }.password-input:focus-within { border-color: #37352f; }.password-toggle { flex: 0 0 auto; margin-bottom: 5px; border: 0; padding: 3px 0; color: #6f6f6f; background: transparent; font-size: 12px; }.password-toggle:hover, .password-toggle:focus-visible { color: #171717; }.password-toggle:focus-visible { outline: 2px solid #37352f; outline-offset: 3px; border-radius: 2px; }
 .auth-submit { width: 100%; margin-top: 24px; padding: 10px; }.auth-submit:disabled { opacity: .55; cursor: wait; }
 .auth-switch { display: block; width: 100%; margin-top: 18px; text-align: center; }
 .topbar {
