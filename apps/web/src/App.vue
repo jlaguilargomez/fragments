@@ -79,6 +79,14 @@ async function signOut() { clearEncryption(); await authApi.logout(); session.va
         <p class="help-intro">{{ t('helpIntro') }}</p>
       </section>
       <div class="help-content">
+        <section v-if="isTrialMode" class="help-section help-note">
+          <h2>{{ t('demoTitle') }}</h2><p>{{ t('demoDescription') }}</p>
+          <ul><li>{{ t('demoStorage') }}</li><li>{{ t('demoNoLogin') }}</li><li>{{ t('demoNoVoice') }}</li><li>{{ t('demoNoSync') }}</li><li>{{ t('demoReset') }}</li></ul>
+        </section>
+        <section v-else class="help-section help-note">
+          <h2>{{ t('premiumTitle') }}</h2><p>{{ t('premiumDescription') }}</p>
+          <ul><li>{{ t('premiumStorage') }}</li><li>{{ t('premiumLogin') }}</li><li>{{ t('premiumVoice') }}</li><li>{{ t('premiumInvite') }}</li></ul>
+        </section>
         <section class="help-section">
           <h2>{{ t('whatIsFragments') }}</h2><p>{{ t('fragmentsDescription') }}</p>
         </section>
@@ -88,11 +96,14 @@ async function signOut() { clearEncryption(); await authApi.logout(); session.va
         <section class="help-section">
           <h2>{{ t('whatToday') }}</h2>
           <ul>
-            <li>{{ t('createText') }}</li><li>{{ t('recordVoice') }}</li><li>{{ t('browseByDay') }}</li><li>{{ t('editOrDelete') }}</li><li>{{ t('keepPrivate') }}</li>
+            <li>{{ t('createText') }}</li><li v-if="!isTrialMode">{{ t('recordVoice') }}</li><li>{{ t('browseByDay') }}</li><li>{{ t('editOrDelete') }}</li><li>{{ isTrialMode ? t('demoLocalOnly') : t('keepPrivate') }}</li>
           </ul>
         </section>
-        <section class="help-section">
+        <section v-if="!isTrialMode" class="help-section">
           <h2>{{ t('voiceNotes') }}</h2><p>{{ t('voiceDescription') }}</p><p>{{ t('voicePreview') }}</p>
+        </section>
+        <section v-else class="help-section">
+          <h2>{{ t('voiceNotes') }}</h2><p>{{ t('demoNoVoice') }}</p>
         </section>
         <section class="help-section">
           <h2>{{ t('notAvailable') }}</h2>
