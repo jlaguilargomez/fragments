@@ -99,7 +99,7 @@ onUnmounted(() => { discardRecording = true; if (recorder && recorder.state !== 
 
     <template v-if="captureMode === 'manual' || !transcribeFragment || compact">
       <label class="composer-title-label" :for="titleId">{{ t('titleOptional') }}</label>
-      <input :id="titleId" v-model="title" :aria-label="t('fragmentTitle')" :placeholder="t('whatMind')" maxlength="200" />
+      <input :id="titleId" v-model="title" :aria-label="t('fragmentTitle')" :placeholder="t('titleHint')" maxlength="200" />
       <textarea v-model="content" :aria-label="t('fragmentContent')" :placeholder="t('whatMind')" :rows="compact ? 4 : 7" maxlength="20000" required />
       <div class="composer-actions"><button v-if="compact" class="text-button" type="button" @click="emit('cancel')">{{ t('cancel') }}</button><button class="save-button" type="submit" :disabled="recordingState !== 'idle'">{{ submitLabel === 'Save fragment' ? t('saveFragment') : submitLabel === 'Save changes' ? t('saveChanges') : submitLabel }}</button></div>
     </template>
