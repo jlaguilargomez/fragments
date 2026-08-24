@@ -50,7 +50,7 @@ button { cursor: pointer; }
 .page-heading { margin-bottom: 26px; }
 .eyebrow { margin: 0 0 14px; color: #303030; font-size: 16px; font-weight: 500; text-transform: uppercase; letter-spacing: .04em; }
 .day-nav { display: grid; grid-template-columns: 50px minmax(0, 1fr) 50px; align-items: stretch; min-height: 56px; border: 1px solid #c9c1b5; border-radius: 7px; overflow: hidden; background: #fffdf9; }
-.day-summary { display: grid; grid-template-columns: auto minmax(0, 1fr); min-width: 0; align-items: center; gap: 14px; padding: 0 15px; border-left: 1px solid #d8d0c5; border-right: 1px solid #d8d0c5; }
+.day-summary { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; min-width: 0; align-items: center; gap: 14px; padding: 0 15px; border-left: 1px solid #d8d0c5; border-right: 1px solid #d8d0c5; }
 .day-nav h1 { min-width: max-content; margin: 0; font-size: 28px; line-height: 1; letter-spacing: -.04em; font-weight: 700; white-space: nowrap; }
 .day-button {
   border: 0; border-radius: 0; padding: 0; color: #171717;
@@ -58,6 +58,10 @@ button { cursor: pointer; }
 }
 .day-button:hover { background: #f4efe7; color: #000; }
 .date-label { min-width: 0; max-width: 100%; margin: 0; overflow: hidden; color: #858585; font-size: 15px; text-overflow: ellipsis; text-transform: capitalize; white-space: nowrap; }
+.back-to-today { display: inline-flex; align-items: center; gap: 6px; border: 1px solid #c9c1b5; border-radius: 5px; padding: 6px 10px; color: #4f4e4b; background: #fffdf9; font-size: 12px; font-weight: 600; line-height: 1; white-space: nowrap; transition: border-color .12s ease, background .12s ease, color .12s ease; }
+.back-to-today span { font-size: 15px; line-height: .8; }
+.back-to-today:hover, .back-to-today:focus-visible { border-color: #8d8170; color: #171717; background: #f4efe7; outline: none; }
+.back-to-today:focus-visible { box-shadow: 0 0 0 2px #8d817033; }
 
 .capture { border: 0; border-radius: 0; padding: 0; }
 .capture:focus-within { border: 0; box-shadow: none; padding: 0; margin: 0; }
@@ -106,7 +110,7 @@ button { cursor: pointer; }
 @media (max-width: 600px) {
   .topbar { height: 64px; min-width: 0; gap: 12px; padding: 0 12px; }.brand { flex: 1 1 auto; gap: 9px; font-size: 18px; }.brand-mark { flex: 0 0 auto; width: 34px; height: 34px; }.account-area { flex: 0 0 auto; gap: 5px; font-size: 12px; }.account-area > span:first-child, .account-area .account-divider { display: none; }.account-area .text-button { padding: 4px 3px; white-space: nowrap; }.language-picker select { width: auto; min-width: 82px; height: 32px; padding: 4px 6px; }.page { width: min(100% - 32px, 1080px); padding-top: 32px; }.page-heading { margin-bottom: 28px; }.eyebrow { font-size: 15px; margin-bottom: 12px; }
   .help-heading { margin-bottom: 38px; }.help-heading h1 { font-size: 36px; }.help-intro { font-size: 16px; }.help-section { padding: 22px 0 24px; }
-  .day-nav { grid-template-columns: 46px minmax(0, 1fr) 46px; min-height: 60px; }.day-summary { gap: 10px; padding: 0 12px; }.day-nav h1 { font-size: 26px; }.date-label { font-size: 13px; }.day-button { font-size: 26px; }.composer-title-label { font-size: 16px; }.composer input { padding: 14px 15px; font-size: 16px; }.composer textarea { min-height: 190px; margin-top: 20px; padding: 15px; }.composer-actions { margin-top: 18px; }.save-button { padding: 11px 16px; font-size: 15px; }.timeline { margin-top: 32px; padding-top: 22px; }.fragment-count { font-size: 15px; }.fragment-entry { grid-template-columns: 1fr; gap: 5px; padding: 13px 0; }.fragment-entry time { padding: 0; }.entry-actions { opacity: 1; margin-top: 9px; }
+  .day-nav { grid-template-columns: 46px minmax(0, 1fr) 46px; min-height: 60px; }.day-summary { gap: 10px; padding: 0 12px; }.day-nav h1 { font-size: 26px; }.date-label { font-size: 13px; }.back-to-today { gap: 4px; padding: 6px 8px; font-size: 11px; }.back-to-today span { font-size: 14px; }.day-button { font-size: 26px; }.composer-title-label { font-size: 16px; }.composer input { padding: 14px 15px; font-size: 16px; }.composer textarea { min-height: 190px; margin-top: 20px; padding: 15px; }.composer-actions { margin-top: 18px; }.save-button { padding: 11px 16px; font-size: 15px; }.timeline { margin-top: 32px; padding-top: 22px; }.fragment-count { font-size: 15px; }.fragment-entry { grid-template-columns: 1fr; gap: 5px; padding: 13px 0; }.fragment-entry time { padding: 0; }.entry-actions { opacity: 1; margin-top: 9px; }
   .voice-alternative { gap: 7px; margin-bottom: 18px; }.voice-alternative-copy small { display: none; }.voice-alternative-button { padding: 7px 8px; font-size: 12px; }.voice-capture-panel { align-items: flex-start; flex-wrap: wrap; padding: 16px; }.voice-panel-copy { min-width: calc(100% - 50px); }.record-button { width: 100%; }
 }
 
@@ -117,6 +121,7 @@ button { cursor: pointer; }
   .language-picker select { min-width: 76px; }
   .page { width: min(100% - 24px, 1080px); }
   .day-summary { gap: 7px; padding-inline: 9px; }
+  .back-to-today { gap: 3px; padding-inline: 6px; font-size: 10px; }
   .day-nav h1 { font-size: 23px; }
   .date-label { font-size: 12px; }
   .day-nav { grid-template-columns: 40px minmax(0, 1fr) 40px; }
