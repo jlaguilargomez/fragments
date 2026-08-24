@@ -5,6 +5,10 @@ stores only a SHA-256 digest of that token, so a database read does not directly
 produce a usable cookie. Sessions expire after 30 days and logout records a
 revocation timestamp.
 
+When the application opens, it can restore a still-valid session cookie. Because
+the encryption key is intentionally not persisted, the user must then enter the
+password on the unlock screen; this is separate from creating a new session.
+
 Note encryption is separate from session authentication. The browser derives a
 250,000-iteration PBKDF2 key from the user's password and uses it with AES-GCM for
 note titles and content. That encryption key is never sent to the API and remains

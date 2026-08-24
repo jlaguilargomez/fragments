@@ -58,12 +58,17 @@ The local MVP supports the complete text-fragment workflow:
 - Encrypt note titles and content in the browser with AES-GCM using a key derived
   from the user's password; the API and D1 store ciphertext only for new or migrated notes.
 - Migrate legacy plaintext notes lazily when the authenticated user opens their day.
-- Keep the encryption key in browser memory only; a fresh tab or browser restart requires
-  the user to authenticate again before notes can be read.
+- Keep the encryption key in browser memory only; a fresh tab or browser restart
+  requires the user to enter the password again before notes can be read (the
+  server session may still be restored).
+- Restore a valid server session after reopening the app and show an unlock step
+  that asks for the password without creating a second session.
 
-The voice flow and client-side note encryption are implemented and pass local type
-checks, builds, and API tests. The D1 migration was applied remotely, the `AI`
-binding is active, and the Worker was deployed from commit `1a07924`.
+The voice flow and client-side note encryption are implemented. The current
+repository state includes session restoration plus password-based unlocking for
+existing sessions. Local API tests, type checks and builds are the verification
+commands for this state; a successful local check does not by itself prove that
+the last Worker deployment contains the current commit.
 
 The premium deployment is:
 
@@ -76,7 +81,10 @@ when opened after this release. Voice transcription remains a privacy exception:
 audio and the resulting text are visible to the Worker/Workers AI before the result
 is encrypted in the browser.
 
-The latest verified UI and deployment state is commit `1a07924` on `master`.
+The latest repository state reviewed for this document is commit `1dd4a05` on
+`master` (`Support unlocking notes for existing sessions`, 2026-08-24). The
+last deployment recorded in earlier project notes was associated with
+`1a07924`; verify the live Worker separately after deploying newer changes.
 
 ### Current implementation
 
@@ -89,22 +97,25 @@ The latest verified UI and deployment state is commit `1a07924` on `master`.
 | Password storage | PBKDF2-HMAC-SHA256, 100,000 iterations, shared by Node and Workers |
 | Note encryption | Browser AES-GCM; PBKDF2-derived key with 250,000 iterations; key is never sent to the API |
 | Sessions | Server-side records, token digest in D1/SQLite, 30-day HttpOnly cookie |
+| Session restore | Existing cookie is restored; password unlocks the in-memory browser key |
 | Repository | npm workspaces monorepo |
 | Local database | SQLite file at `apps/api/data/fragments.sqlite` |
 | Remote runtime | Cloudflare Worker serving Vue assets and `/api/*` |
 | Remote database | Cloudflare D1 database `fragments` |
 | Main branch | `master` |
 | GitHub repository | The repository URL is maintained by the project owner. |
-| Latest verified release | `1a07924` — client-side end-to-end note encryption |
+| Latest reviewed repository state | `1dd4a05` — restore sessions and unlock notes with the password |
 
 The trial web application normally runs on port `5173`; Vite may select the next
 available port if it is occupied. Premium local development additionally runs
 Express on port `3001`, with Vite proxying `/auth` and `/fragments`. The remote
-premium application is served by a same-origin Cloudflare Worker with D1.
+premium application is served by a same-origin Cloudflare Worker with D1 and
+exposes `GET /api/health` for a basic availability check.
 
 ### Published environments
 
-A GitHub Actions workflow prepares the **offline trial** for GitHub Pages. It
+A GitHub Actions workflow at `.github/workflows/deploy-pages.yml` prepares the
+**offline trial** for GitHub Pages on pushes to `master` or manual dispatch. It
 seeds welcome fragments once and persists edits in each visitor's browser.
 
 Before the workflow can deploy, GitHub Pages must be enabled in the repository settings and configured to use **GitHub Actions** as its source. Expected URL once enabled:
@@ -177,8 +188,8 @@ pages.
 ## Recommended next conversation
 
 The next useful product step is to decide whether test-account reset should remain a
-documented D1 operation or become a user-facing “delete account” flow. After that,
-the roadmap continues with optional AI enrichment: cleanup and title suggestions
+documented D1 operation or become a user-facing “delete account” flow. The
+roadmap then continues with optional AI enrichment: cleanup and title suggestions
 that preserve the author's voice.
 
 ## How to use this document in future conversations

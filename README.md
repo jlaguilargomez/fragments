@@ -36,6 +36,10 @@ npm run dev:premium
 The local premium API runs on port 3001 and stores its database at
 `apps/api/data/fragments.sqlite`.
 
+If a premium session cookie is still valid when the page is reopened, the
+application restores the session and asks only for the password to unlock the
+in-memory encryption key. A new login is not required in that case.
+
 ## Useful commands
 
 ```bash
@@ -93,6 +97,9 @@ npm test
 npm run typecheck
 npm run build:worker
 ```
+
+The Worker also exposes `GET /api/health`, which returns `{ "status": "ok" }`
+and can be used as a lightweight deployment check.
 
 ## Structure
 

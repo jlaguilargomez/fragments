@@ -41,6 +41,20 @@ The Worker accepts an optional `SIGNUP_INVITE_CODE` secret. When configured, the
 signup endpoint requires a matching `inviteCode`; login is unaffected. Omitting
 the secret restores public signup without changing the API shape.
 
+On startup, the frontend checks the existing session cookie. If the session is
+valid, it shows an unlock screen and derives the AES-GCM key again from the
+password; it does not perform a second login. A new tab or browser restart does
+not retain that key. Signing out revokes the server session and clears the key
+from browser memory.
+
+## HTTP surface
+
+The local Express server exposes `/auth/*` and `/fragments/*`; the Worker uses
+the same operations under `/api/auth/*` and `/api/fragments/*`. The Worker also
+provides `GET /api/health`. Fragment routes require the authenticated session,
+and repository queries include both the user ID and fragment ID/date so
+ownership is enforced below the UI.
+
 ## Repository structure
 
 | Area | Responsibility |
@@ -56,4 +70,5 @@ the secret restores public signup without changing the API shape.
 API tests cover premium HTTP behaviour, authentication, ownership, validation
 and voice handling. Type checks and builds cover both frontend modes and the
 Worker bundle. The GitHub Pages build is static and must not depend on `/api`,
-`/auth` or `/fragments` requests.
+`/auth` or `/fragments` requests. The Pages workflow runs on pushes to
+`master` and can also be started manually.
