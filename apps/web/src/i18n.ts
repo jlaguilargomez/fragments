@@ -94,6 +94,9 @@ const translations = {
     noSpeech: 'No speech was detected.',
     voiceUnavailable: 'Voice transcription is currently unavailable.',
     privateNotebook: 'Private notebook',
+    unlockTitle: 'Unlock your notes',
+    unlockIntro: 'Your account is still signed in. Enter your password to unlock your encrypted notes.',
+    unlockButton: 'Unlock notes',
     welcomeBack: 'Welcome back',
     makePrivateSpace: 'Make a private space',
     continueThoughts: 'Continue with your thoughts.',
@@ -131,6 +134,9 @@ const translations = {
     couldNotAuthenticate: 'Could not authenticate.'
   },
   es: {
+    unlockTitle: 'Desbloquea tus notas',
+    unlockIntro: 'Tu cuenta sigue conectada. Introduce tu contraseña para desbloquear tus notas cifradas.',
+    unlockButton: 'Desbloquear notas',
     invalidInvitation: 'El código de invitación no es válido.',
     demoTitle: 'Sobre esta Demo',
     demoDescription: 'Estás usando la versión Demo de Fragments. Está pensada para probar la experiencia de escritura sin crear una cuenta ni conectarse a un servidor.',

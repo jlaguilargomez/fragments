@@ -66,8 +66,8 @@ async function signOut() { clearEncryption(); await authApi.logout(); session.va
 </script>
 
 <template>
-  <AuthPanel v-if="!isTrialMode && !checkingSession && (!session || !unlocked)" @authenticated="authenticated" />
-  <main v-else class="workspace">
+  <AuthPanel v-if="!isTrialMode && !checkingSession && (!session || !unlocked)" :session="session" @authenticated="authenticated" />
+  <main v-else-if="!checkingSession" class="workspace">
     <header class="topbar">
       <div class="brand"><img class="brand-mark" :src="`${assetBase}icon.svg`" alt="" /><span>Fragments</span></div>
       <div class="account-area"><span>{{ isTrialMode ? t('trialMode') : session?.user.email }}</span><span class="account-divider" aria-hidden="true"></span><button class="text-button" @click="activeView = activeView === 'help' ? 'fragments' : 'help'">{{ activeView === 'help' ? t('backToFragments') : t('help') }}</button><label class="language-picker"><span class="sr-only">{{ t('language') }}</span><select :value="locale" :aria-label="t('language')" @change="setLocale(($event.target as HTMLSelectElement).value as 'en' | 'es')"><option value="en">EN</option><option value="es">ES</option></select></label><span v-if="session" class="account-divider" aria-hidden="true"></span><button v-if="session" class="text-button" @click="signOut">{{ t('signOut') }}</button></div>
