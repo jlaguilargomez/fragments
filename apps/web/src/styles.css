@@ -6,6 +6,7 @@
 }
 
 * { box-sizing: border-box; }
+html, body { touch-action: pan-x pan-y; }
 body { margin: 0; min-width: 320px; overflow-x: clip; background: #f5f0e6; }
 button, input, textarea { font: inherit; }
 button { cursor: pointer; }
