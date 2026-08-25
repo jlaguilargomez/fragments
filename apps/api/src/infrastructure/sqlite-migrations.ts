@@ -67,4 +67,12 @@ export function applySqliteMigrations(database: SqliteDatabase): void {
     });
     migration();
   }
+
+  if (!versions.has(3)) {
+    const migration = database.transaction(() => {
+      database.exec("ALTER TABLE fragments ADD COLUMN contexts_json TEXT NOT NULL DEFAULT '[]'");
+      database.prepare('INSERT INTO schema_migrations (version, applied_at) VALUES (?, ?)').run(3, new Date().toISOString());
+    });
+    migration();
+  }
 }

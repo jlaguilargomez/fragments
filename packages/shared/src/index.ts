@@ -3,6 +3,7 @@ export interface Fragment {
   userId?: string;
   title: string | null;
   content: string;
+  contexts: string[];
   source: 'text' | 'voice';
   createdAt: string;
   updatedAt: string;
@@ -15,10 +16,12 @@ export interface AuthCredentials { email: string; password: string; inviteCode?:
 export interface CreateFragmentInput {
   title?: string | null;
   content: string;
+  contexts?: string[];
   date: string;
 }
 
 export interface UpdateFragmentInput {
   title?: string | null;
   content?: string;
+  contexts?: string[];
 }

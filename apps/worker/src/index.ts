@@ -10,22 +10,22 @@ export interface Env {
 }
 
 type FragmentRow = {
-  id: string; user_id: string; title: string | null; content: string; source: 'text' | 'voice'; created_at: string; updated_at: string;
+  id: string; user_id: string; title: string | null; content: string; contexts_json: string; source: 'text' | 'voice'; created_at: string; updated_at: string;
 };
 type UserRow = { id: string; email: string; password_hash: string; created_at: string; updated_at: string };
 type SessionRow = { id: string; user_id: string; token_hash: string; expires_at: string; revoked_at: string | null; created_at: string };
 
 function createD1FragmentRepository(database: D1Database): FragmentRepository & AuthRepository {
   const toFragment = (row: FragmentRow): StoredFragment => ({
-    id: row.id, userId: row.user_id, title: row.title, content: row.content, source: row.source,
+    id: row.id, userId: row.user_id, title: row.title, content: row.content, contexts: JSON.parse(row.contexts_json || '[]'), source: row.source,
     createdAt: row.created_at, updatedAt: row.updated_at
   });
   return {
     async create(fragment) {
       await database.prepare(`INSERT INTO fragments
-        (id, user_id, title, content, source, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?)`)
-        .bind(fragment.id, fragment.userId, fragment.title, fragment.content, fragment.source, fragment.createdAt, fragment.updatedAt)
+        (id, user_id, title, content, contexts_json, source, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
+        .bind(fragment.id, fragment.userId, fragment.title, fragment.content, JSON.stringify(fragment.contexts), fragment.source, fragment.createdAt, fragment.updatedAt)
         .run();
       return fragment;
     },
@@ -38,9 +38,13 @@ function createD1FragmentRepository(database: D1Database): FragmentRepository & 
         WHERE user_id = ? AND substr(created_at, 1, 10) = ? ORDER BY created_at ASC`).bind(userId, date).all<FragmentRow>();
       return result.results.map(toFragment);
     },
+    async findAll(userId) {
+      const result = await database.prepare('SELECT * FROM fragments WHERE user_id = ? ORDER BY created_at DESC').bind(userId).all<FragmentRow>();
+      return result.results.map(toFragment);
+    },
     async update(userId, fragment) {
-      const result = await database.prepare(`UPDATE fragments SET title = ?, content = ?, updated_at = ?
-        WHERE user_id = ? AND id = ?`).bind(fragment.title, fragment.content, fragment.updatedAt, userId, fragment.id).run();
+      const result = await database.prepare(`UPDATE fragments SET title = ?, content = ?, contexts_json = ?, updated_at = ?
+        WHERE user_id = ? AND id = ?`).bind(fragment.title, fragment.content, JSON.stringify(fragment.contexts), fragment.updatedAt, userId, fragment.id).run();
       return result.meta.changes === 1 ? fragment : undefined;
     },
     async delete(userId, id) {
@@ -57,8 +61,9 @@ function createD1FragmentRepository(database: D1Database): FragmentRepository & 
 }
 
 const dateSchema = z.iso.date();
-const createSchema = z.object({ title: z.string().max(200_000).nullable().optional(), content: z.string().min(1).max(200_000), date: z.iso.date() });
-const updateSchema = z.object({ title: z.string().max(200_000).nullable().optional(), content: z.string().min(1).max(200_000).optional() }).refine(value => value.title !== undefined || value.content !== undefined, 'At least one field is required');
+const contextsSchema = z.array(z.string().trim().min(1).max(60)).max(12).optional();
+const createSchema = z.object({ title: z.string().max(200_000).nullable().optional(), content: z.string().min(1).max(200_000), contexts: contextsSchema, date: z.iso.date() });
+const updateSchema = z.object({ title: z.string().max(200_000).nullable().optional(), content: z.string().min(1).max(200_000).optional(), contexts: contextsSchema }).refine(value => value.title !== undefined || value.content !== undefined || value.contexts !== undefined, 'At least one field is required');
 const credentialsSchema = z.object({ email: z.string().email(), password: z.string().min(12), inviteCode: z.string().optional() });
 const voiceDateSchema = z.object({ date: z.iso.date() });
 const COOKIE = 'fragments_session';
@@ -100,6 +105,7 @@ async function handleApi(request: Request, env: Env): Promise<Response> {
     }
     if (suffix === '' && request.method === 'POST') return json(await createFragment(repository, session.user.id, createSchema.parse(await request.json())), 201);
     if (suffix === '' && request.method === 'GET') return json(await getFragmentsForDate(repository, session.user.id, dateSchema.parse(url.searchParams.get('date'))));
+    if (suffix === '/all' && request.method === 'GET') return json(await repository.findAll(session.user.id));
     const id = suffix.slice(1);
     if (!id || id.includes('/')) return json({ error: 'Not found' }, 404);
     if (request.method === 'GET') return json(await getFragment(repository, session.user.id, id));

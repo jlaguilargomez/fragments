@@ -19,6 +19,21 @@ describe('Fragments API', () => {
     expect(listed.body).toHaveLength(1); expect(listed.body[0].id).toBe(created.body.id);
   });
 
+  it('persists contexts, normalises duplicates, and lists all fragments', async () => {
+    const api = app(); const cookie = await authenticated(api);
+    const created = await request(api).post('/fragments').set('Cookie', cookie).send({ content: 'A contextual thought.', contexts: [' Work ', 'work', 'Marco'], date: '2026-01-01' }).expect(201);
+    expect(created.body.contexts).toEqual(['Work', 'Marco']);
+    await request(api).patch(`/fragments/${created.body.id}`).set('Cookie', cookie).send({ contexts: ['Books'] }).expect(200);
+    const all = await request(api).get('/fragments/all').set('Cookie', cookie).expect(200);
+    expect(all.body).toHaveLength(1);
+    expect(all.body[0].contexts).toEqual(['Books']);
+  });
+
+  it('rejects contexts beyond the per-fragment limit', async () => {
+    const api = app(); const cookie = await authenticated(api);
+    await request(api).post('/fragments').set('Cookie', cookie).send({ content: 'Too many contexts.', contexts: Array.from({ length: 13 }, (_, index) => `Context ${index}`), date: '2026-01-01' }).expect(400);
+  });
+
   it('creates a fragment for the selected day instead of the current day', async () => {
     const api = app(); const cookie = await authenticated(api);
     const selectedDate = '2026-01-15';

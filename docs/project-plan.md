@@ -18,7 +18,7 @@ An important long-term personal use is collecting memories and reflections, alon
 
 - **Fast capture over organisation.** Writing comes before categorising.
 - **A quiet interface.** The product should feel like a notebook or journal, not a SaaS dashboard.
-- **Private by default.** Fragments belong to one user, and note titles and content are encrypted in the browser before persistence.
+- **Private by default.** Fragments belong to one user, and note titles, content and contexts are encrypted in the browser before persistence.
 - **AI assists invisibly.** Future AI should preserve the author's voice; it must not invent or aggressively reinterpret content.
 - **Learn through the code.** Architecture, decisions, and trade-offs are part of the product documentation.
 
@@ -63,6 +63,15 @@ The local MVP supports the complete text-fragment workflow:
   server session may still be restored).
 - Restore a valid server session after reopening the app and show an unlock step
   that asks for the password without creating a second session.
+- Add optional, non-hierarchical contexts with autocomplete, chips and per-note editing.
+- Search fragments across all dates through a browser-side decrypted context catalogue.
+- Rename, merge and remove contexts globally while keeping readable context names
+  out of the premium server and database.
+- Keep daily fragments chronologically ordered, refresh context suggestions after
+  edits, and provide a compact responsive application header.
+- Keep the application header focused on navigation and session actions; language
+  selection remains available during authentication but is not shown persistently
+  in the main workspace menu.
 
 The voice flow and client-side note encryption are implemented. The current
 repository state includes session restoration plus password-based unlocking for
@@ -81,10 +90,9 @@ when opened after this release. Voice transcription remains a privacy exception:
 audio and the resulting text are visible to the Worker/Workers AI before the result
 is encrypted in the browser.
 
-The latest repository state reviewed for this document is commit `1dd4a05` on
-`master` (`Support unlocking notes for existing sessions`, 2026-08-24). The
-last deployment recorded in earlier project notes was associated with
-`1a07924`; verify the live Worker separately after deploying newer changes.
+This document describes the current working tree. The live Worker deployment is
+managed separately; verify it independently after applying the latest D1
+migration and deploying a new Worker bundle.
 
 ### Current implementation
 
@@ -95,7 +103,8 @@ last deployment recorded in earlier project notes was associated with
 | Persistence | Browser `localStorage` for trial; SQLite locally and Cloudflare D1 remotely for premium |
 | Validation | Zod at the API boundary |
 | Password storage | PBKDF2-HMAC-SHA256, 100,000 iterations, shared by Node and Workers |
-| Note encryption | Browser AES-GCM; PBKDF2-derived key with 250,000 iterations; key is never sent to the API |
+| Note encryption | Browser AES-GCM for title, content and contexts; PBKDF2-derived key with 250,000 iterations; key is never sent to the API |
+| Context storage | `contexts_json`; plaintext in trial storage, individually encrypted values in premium storage |
 | Sessions | Server-side records, token digest in D1/SQLite, 30-day HttpOnly cookie |
 | Session restore | Existing cookie is restored; password unlocks the in-memory browser key |
 | Repository | npm workspaces monorepo |
@@ -138,7 +147,7 @@ Do **not** add these yet:
 - Email verification and password recovery.
 - Password reset or server-side recovery of encrypted notes without a user-held recovery key.
 - OpenAI/OpenRouter chat models, transcription cleanup, or AI title generation.
-- Contexts, tags, folders, or hierarchical organisation.
+- Tags, folders, or hierarchical organisation. Non-hierarchical contexts are implemented.
 - Semantic search, embeddings, vector databases, or chat.
 - Export, cloud synchronisation, sharing, analytics, notifications, or mobile apps.
 
@@ -165,7 +174,7 @@ See [architecture.md](architecture.md) and the ADRs in [decisions](decisions) fo
 | 3a. Help and product guidance | Explain the current workflow, capabilities, limitations, privacy notes, and proposed future direction. | Complete locally and remotely |
 | 3b. Client-side note encryption | Encrypt note titles and content before API persistence; migrate legacy notes progressively. | Complete locally and remotely |
 | 4. AI enrichment | Optional transcription cleanup and title suggestions that preserve voice. | Planned |
-| 5. Contexts | Many-to-many, non-hierarchical contexts such as Marco, Work, and Books. | Planned |
+| 5. Contexts | Many-to-many, non-hierarchical contexts such as Marco, Work, and Books. | Complete locally and remotely |
 | 6+. Discovery and composition | Semantic search, links, book/document generation, and experiments. | Future |
 
 This roadmap is intentionally flexible. Change it based on real use of the app and what is learned.

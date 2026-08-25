@@ -15,6 +15,7 @@ function welcomeFragments(): Fragment[] {
     id: 'demo-morning-walk',
     title: 'Morning walk',
     content: 'Marco stopped to look at a ladybug on the way to school. He said it was wearing a tiny red coat.',
+    contexts: ['Marco'],
     source: 'text',
     createdAt: `${day}T08:42:00.000Z`,
     updatedAt: `${day}T08:42:00.000Z`
@@ -23,6 +24,7 @@ function welcomeFragments(): Fragment[] {
     id: 'demo-idea',
     title: 'A small idea',
     content: 'Make room for thoughts before asking them to become useful.',
+    contexts: ['Ideas'],
     source: 'text',
     createdAt: `${day}T11:16:00.000Z`,
     updatedAt: `${day}T11:16:00.000Z`
@@ -41,7 +43,7 @@ function flatten(store: TrialStore): Fragment[] { return Object.values(store.fra
 function isFragment(value: unknown): value is Fragment {
   if (!value || typeof value !== 'object') return false;
   const fragment = value as Partial<Fragment>;
-  return typeof fragment.id === 'string' && (fragment.title === null || typeof fragment.title === 'string') && typeof fragment.content === 'string' && (fragment.source === 'text' || fragment.source === 'voice') && typeof fragment.createdAt === 'string' && typeof fragment.updatedAt === 'string';
+  return typeof fragment.id === 'string' && (fragment.title === null || typeof fragment.title === 'string') && typeof fragment.content === 'string' && (fragment.contexts === undefined || Array.isArray(fragment.contexts)) && (fragment.source === 'text' || fragment.source === 'voice') && typeof fragment.createdAt === 'string' && typeof fragment.updatedAt === 'string';
 }
 function readTrialStore(): TrialStore {
   const fallback = groupByDate(welcomeFragments());
@@ -50,7 +52,8 @@ function readTrialStore(): TrialStore {
     if (!raw) { localStorage.setItem(TRIAL_STORAGE_KEY, JSON.stringify(fallback)); return fallback; }
     const parsed = JSON.parse(raw) as Partial<TrialStore>;
     if (parsed.version !== 1 || !parsed.fragmentsByDate || typeof parsed.fragmentsByDate !== 'object' || !Object.values(parsed.fragmentsByDate).every(value => Array.isArray(value) && value.every(isFragment))) throw new Error('Invalid trial storage');
-    return { version: 1, fragmentsByDate: parsed.fragmentsByDate as Record<string, Fragment[]> };
+    const fragmentsByDate = Object.fromEntries(Object.entries(parsed.fragmentsByDate as Record<string, Fragment[]>).map(([date, fragments]) => [date, fragments.map(fragment => ({ ...fragment, contexts: fragment.contexts ?? [] }))]));
+    return { version: 1, fragmentsByDate };
   } catch { return fallback; }
 }
 function writeTrialStore(store: TrialStore): void {
@@ -59,10 +62,11 @@ function writeTrialStore(store: TrialStore): void {
 let trialStore = readTrialStore();
 
 const demoApi = {
-  list(date: string) { return Promise.resolve([...(trialStore.fragmentsByDate[date] ?? [])]); },
+  list(date: string) { return Promise.resolve([...(trialStore.fragmentsByDate[date] ?? [])].sort((a, b) => a.createdAt.localeCompare(b.createdAt))); },
+  listAll() { return Promise.resolve(flatten(trialStore).sort((a, b) => b.createdAt.localeCompare(a.createdAt))); },
   create(input: CreateFragmentInput) {
     const now = new Date().toISOString();
-    const fragment: Fragment = { id: crypto.randomUUID(), title: input.title?.trim() || null, content: input.content.trim(), source: 'text', createdAt: `${input.date}T${now.slice(11)}`, updatedAt: now };
+    const fragment: Fragment = { id: crypto.randomUUID(), title: input.title?.trim() || null, content: input.content.trim(), contexts: input.contexts ?? [], source: 'text', createdAt: `${input.date}T${now.slice(11)}`, updatedAt: now };
     trialStore = groupByDate([...flatten(trialStore), fragment]); writeTrialStore(trialStore);
     return Promise.resolve(fragment);
   },
@@ -71,6 +75,7 @@ const demoApi = {
     if (!fragment) return Promise.reject(new Error('Fragment not found'));
     if (input.title !== undefined) fragment.title = input.title?.trim() || null;
     if (input.content !== undefined) fragment.content = input.content.trim();
+    if (input.contexts !== undefined) fragment.contexts = input.contexts;
     fragment.updatedAt = new Date().toISOString();
     trialStore = groupByDate(flatten(trialStore)); writeTrialStore(trialStore);
     return Promise.resolve(fragment);
@@ -96,6 +101,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 const liveApi = {
   list(date: string) { return request<Fragment[]>(`${apiPrefix}/fragments?date=${date}`); },
+  listAll() { return request<Fragment[]>(`${apiPrefix}/fragments/all`); },
   create(input: CreateFragmentInput) { return request<Fragment>(`${apiPrefix}/fragments`, { method: 'POST', body: JSON.stringify(input) }); },
   update(id: string, input: UpdateFragmentInput) { return request<Fragment>(`${apiPrefix}/fragments/${id}`, { method: 'PATCH', body: JSON.stringify(input) }); },
   remove(id: string) { return request<void>(`${apiPrefix}/fragments/${id}`, { method: 'DELETE' }); },
