@@ -6,8 +6,8 @@ A calm, private-by-default notebook for capturing thoughts before organising the
 
 Fragments has a public trial and a premium deployment:
 
-- **Trial:** use the [GitHub Pages demo](https://jlaguilargomez.github.io/fragments/) or run `npm run dev`. It requires no account or network API and stores editable text fragments in `localStorage` in the current browser. Clearing site data removes them. Voice capture is not available.
-- **Premium:** use the private [Cloudflare deployment](https://fragments.jlaguigom-ai.workers.dev). It keeps the current login/session flow, browser-side note encryption, Cloudflare Worker API, D1 persistence and Workers AI voice transcription. New accounts require the invitation code configured by the owner.
+- **Trial:** use the [GitHub Pages demo](https://jlaguilargomez.github.io/fragments/) or run `npm run dev`. It requires no account or network API and stores editable text fragments and contexts in `localStorage` in the current browser. Clearing site data removes them. Voice capture is not available.
+- **Premium:** use the private [Cloudflare deployment](https://fragments.jlaguigom-ai.workers.dev). It keeps the current login/session flow, browser-side encryption of note fields and contexts, Cloudflare Worker API, D1 persistence and Workers AI voice transcription. New accounts require the invitation code configured by the owner.
 
 The environments are intentionally independent: trial data is never copied to
 Cloudflare and premium data is never loaded by the trial.
@@ -35,6 +35,11 @@ npm run dev:premium
 
 The local premium API runs on port 3001 and stores its database at
 `apps/api/data/fragments.sqlite`.
+
+Fragments can be assigned optional contexts while writing or editing. The
+Contexts view searches across all dates and supports autocomplete, inline note
+editing, context renaming, merging and global removal. In premium mode context
+names are encrypted in the browser together with the rest of the note fields.
 
 If a premium session cookie is still valid when the page is reopened, the
 application restores the session and asks only for the password to unlock the

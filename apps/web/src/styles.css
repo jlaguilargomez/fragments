@@ -101,6 +101,8 @@ button { cursor: pointer; }
 .entry-action-button.danger { border-color: #e5c5c2; color: #b33f3b; background: #fffafa; }
 .entry-action-button.danger:hover, .entry-action-button.danger:focus-visible { border-color: #d44c47; color: #a8322e; background: #fdf1f0; }
 .compact { padding: 3px 0; }.compact .composer-title-label { font-size: 15px; margin-bottom: 6px; }.compact input { padding: 10px; font-size: 16px; border-width: 1px; }.compact textarea { min-height: 76px; margin-top: 10px; padding: 10px; font-size: 15px; border-width: 1px; }.compact .composer-actions { margin-top: 10px; }.compact .save-button { padding: 8px 12px; font-size: 13px; border-radius: 4px; }.error { margin: 22px 0 0; color: #d44c47; font-size: 14px; }
+.context-field { position: relative; margin-top: 16px; }.context-label { display: block; margin-bottom: 7px; color: #414141; font-size: 14px; font-weight: 600; }.context-control { display: flex; min-height: 46px; flex-wrap: wrap; align-items: center; gap: 6px; padding: 6px 10px; border: 1px solid #c9c1b5; border-radius: 7px; background: #fffdf9; }.context-control:focus-within { border-color: #8d8170; box-shadow: 0 0 0 2px #8d817033; }.context-control input { flex: 1 1 150px; min-width: 120px; padding: 5px 2px; border: 0; background: transparent; font-size: 14px; outline: none; }.context-chip { display: inline-flex; align-items: center; gap: 5px; border: 1px solid #d6cbbc; border-radius: 999px; padding: 4px 8px; color: #5a5045; background: #f3ede4; font-size: 12px; line-height: 1.1; }.context-chip button { border: 0; padding: 0 1px; color: #8b8176; background: transparent; font-size: 16px; line-height: .8; }.context-chip button:hover { color: #171717; }.context-suggestions, .context-search-results { position: absolute; z-index: 4; left: 0; right: 0; display: grid; gap: 2px; margin-top: 4px; padding: 5px; border: 1px solid #d8d0c5; border-radius: 6px; background: #fffdf9; box-shadow: 0 8px 20px #6f62501a; }.context-suggestions button, .context-search-results button { display: flex; justify-content: space-between; border: 0; border-radius: 4px; padding: 8px 9px; color: #4f4e4b; background: transparent; text-align: left; }.context-suggestions button:hover, .context-search-results button:hover { background: #f4efe7; }.context-hint { display: block; margin-top: 5px; color: #9b9a97; font-size: 11px; }.compact .context-field { margin-top: 10px; }.compact .context-hint { display: none; }.entry-contexts { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
+.contexts-page { width: min(100% - 64px, 1080px); margin: 0 auto; padding: 36px 0 56px; }.contexts-heading { max-width: 650px; margin-bottom: 30px; }.contexts-heading h1 { margin: 0; font-size: 42px; letter-spacing: -.05em; }.contexts-heading p:not(.eyebrow) { margin: 15px 0 0; color: #787774; font-size: 17px; line-height: 1.55; }.context-search-wrap { position: relative; max-width: 620px; margin-bottom: 22px; }.context-search-wrap label { display: block; margin-bottom: 7px; color: #414141; font-size: 14px; font-weight: 600; }.context-search-wrap input { width: 100%; padding: 12px 14px; border: 1px solid #c9c1b5; border-radius: 7px; background: #fffdf9; outline: none; }.context-search-wrap input:focus { border-color: #8d8170; box-shadow: 0 0 0 2px #8d817033; }.context-search-results { top: 70px; }.context-catalog { display: flex; flex-wrap: wrap; gap: 8px; padding: 16px 0 28px; border-top: 1px solid #c9c1b5; }.catalog-item { display: inline-flex; align-items: center; gap: 8px; border: 1px solid #d6cbbc; border-radius: 999px; padding: 8px 11px; color: #5a5045; background: #f3ede4; }.catalog-item:hover, .catalog-item.selected { border-color: #8d8170; background: #e9dfd1; }.catalog-item small { color: #94887a; }.context-results { border-top: 1px solid #c9c1b5; }.context-results-heading { display: flex; justify-content: space-between; align-items: end; gap: 20px; padding: 24px 0 8px; }.context-results-heading .eyebrow { margin-bottom: 8px; }.context-results-heading h2 { margin: 0; font-size: 27px; }.context-management { display: flex; flex-wrap: wrap; align-items: center; justify-content: end; gap: 7px; }.context-management input { width: 160px; padding: 7px 9px; border: 1px solid #c9c1b5; border-radius: 5px; background: #fffdf9; }.contexts-page .fragment-entry { padding-left: 0; padding-right: 0; }
 
 .language-picker { display: flex; align-items: center; }
 .language-picker select { border: 1px solid #cfcfcf; border-radius: 5px; padding: 4px 6px; color: inherit; background: transparent; font: inherit; font-size: 12px; }
@@ -114,11 +116,16 @@ button { cursor: pointer; }
   .voice-alternative { gap: 7px; margin-bottom: 18px; }.voice-alternative-copy small { display: none; }.voice-alternative-button { padding: 7px 8px; font-size: 12px; }.voice-capture-panel { align-items: flex-start; flex-wrap: wrap; padding: 16px; }.voice-panel-copy { min-width: calc(100% - 50px); }.record-button { width: 100%; }
 }
 
+/* Keep the context suggestions above the catalogue while a query is unresolved. */
+.context-search-wrap { z-index: 5; }
+.mobile-action-label { display: none; }
+
 @media (max-width: 360px) {
   .topbar { padding-inline: 10px; }
   .brand { gap: 7px; font-size: 17px; }
   .account-area { gap: 2px; }
-  .language-picker select { min-width: 76px; }
+  .language-picker select { min-width: 52px; }
+  .help-button { display: none; }.desktop-action-label { display: none; }.mobile-action-label { display: inline; }.contexts-button { min-width: 24px; padding-inline: 2px; text-align: center; }
   .page { width: min(100% - 24px, 1080px); }
   .day-summary { gap: 7px; padding-inline: 9px; }
   .back-to-today { flex-basis: 124px; gap: 3px; padding-inline: 6px; font-size: 10px; }
@@ -127,4 +134,8 @@ button { cursor: pointer; }
   .day-nav { grid-template-columns: 40px minmax(0, 1fr) 40px; }
   .composer-actions { flex-wrap: wrap; }
   .save-button { width: 100%; }
+}
+
+@media (max-width: 600px) {
+  .contexts-page { width: min(100% - 32px, 1080px); padding-top: 32px; }.contexts-heading h1 { font-size: 36px; }.contexts-heading p:not(.eyebrow) { font-size: 16px; }.context-results-heading { align-items: flex-start; flex-direction: column; }.context-management { justify-content: flex-start; width: 100%; }.context-management input { flex: 1; width: auto; }.context-control input { min-width: 90px; }
 }

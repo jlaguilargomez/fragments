@@ -29,10 +29,17 @@ premium command calls Express and SQLite; the deployed premium build calls the
 same-origin Worker and D1. Both server runtimes share the asynchronous use cases
 and repository contracts.
 
-Premium note titles and contents are encrypted in the browser before persistence.
+Premium note titles, contents and contexts are encrypted in the browser before persistence.
 The encryption key is derived from the user's password and remains in browser
 memory. Voice uploads are a premium-only exception: the Worker sends temporary
 audio to Workers AI, discards the audio and stores the resulting text fragment.
+
+Contexts are stored as a JSON array in `contexts_json`. In trial mode the values
+are readable in `localStorage`; in premium mode each context value is encrypted
+individually before the array is sent to Express or the Worker. The browser loads
+all of the user's fragments through `/fragments/all`, decrypts them locally and
+derives the context catalogue and cross-date search without exposing readable
+context names to the server.
 
 ## Authentication
 
@@ -52,14 +59,17 @@ from browser memory.
 The local Express server exposes `/auth/*` and `/fragments/*`; the Worker uses
 the same operations under `/api/auth/*` and `/api/fragments/*`. The Worker also
 provides `GET /api/health`. Fragment routes require the authenticated session,
-and repository queries include both the user ID and fragment ID/date so
-ownership is enforced below the UI.
+and repository queries include the user ID and fragment identifiers so
+ownership is enforced below the UI. The `/fragments/all` route supports the
+browser-side context catalogue and search across dates; premium servers never
+inspect readable context names. Context management (rename, merge and global
+removal) is coordinated by the browser and persists the affected fragments.
 
 ## Repository structure
 
 | Area | Responsibility |
 | --- | --- |
-| `apps/web` | Vue UI, trial storage, premium API client and encryption. |
+| `apps/web` | Vue UI, trial storage, premium API client, encryption and context search. |
 | `apps/api` | Local Express routes and SQLite adapter. |
 | `apps/worker` | Cloudflare Worker, D1 adapter, AI binding and migrations. |
 | `packages/server-core` | Shared application functions and persistence contracts. |
@@ -67,8 +77,10 @@ ownership is enforced below the UI.
 
 ## Testing strategy
 
-API tests cover premium HTTP behaviour, authentication, ownership, validation
-and voice handling. Type checks and builds cover both frontend modes and the
+API tests cover premium HTTP behaviour, authentication, ownership, validation,
+contexts and voice handling. Manual browser QA covers context creation,
+autocompletion, cross-date search, inline editing, context merging, deletion and
+responsive layouts. Type checks and builds cover both frontend modes and the
 Worker bundle. The GitHub Pages build is static and must not depend on `/api`,
 `/auth` or `/fragments` requests. The Pages workflow runs on pushes to
 `master` and can also be started manually.

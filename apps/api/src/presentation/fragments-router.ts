@@ -5,8 +5,9 @@ import type { VoiceTranscriber } from '@fragments/server-core';
 import type { FragmentRepository } from '../domain/fragment.js';
 
 const dateSchema = z.iso.date();
-const createSchema = z.object({ title: z.string().max(200_000).nullable().optional(), content: z.string().min(1).max(200_000), date: z.iso.date() });
-const updateSchema = z.object({ title: z.string().max(200_000).nullable().optional(), content: z.string().min(1).max(200_000).optional() }).refine(value => value.title !== undefined || value.content !== undefined, 'At least one field is required');
+const contextsSchema = z.array(z.string().trim().min(1).max(60)).max(12).optional();
+const createSchema = z.object({ title: z.string().max(200_000).nullable().optional(), content: z.string().min(1).max(200_000), contexts: contextsSchema, date: z.iso.date() });
+const updateSchema = z.object({ title: z.string().max(200_000).nullable().optional(), content: z.string().min(1).max(200_000).optional(), contexts: contextsSchema }).refine(value => value.title !== undefined || value.content !== undefined || value.contexts !== undefined, 'At least one field is required');
 const MAX_AUDIO_BYTES = 10 * 1024 * 1024;
 const voiceDateSchema = z.object({ date: z.iso.date() });
 
@@ -31,6 +32,9 @@ export function createFragmentsRouter(repository: FragmentRepository, requireUse
   });
   router.get('/', async (request, response, next) => {
     try { response.json(await getFragmentsForDate(repository, (await requireUser(request)).id, dateSchema.parse(request.query.date))); } catch (error) { next(error); }
+  });
+  router.get('/all', async (request, response, next) => {
+    try { response.json(await repository.findAll((await requireUser(request)).id)); } catch (error) { next(error); }
   });
   router.get('/:id', async (request, response, next) => {
     try { response.json(await getFragment(repository, (await requireUser(request)).id, request.params.id)); } catch (error) { next(error); }

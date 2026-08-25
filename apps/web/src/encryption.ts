@@ -40,18 +40,21 @@ export async function decryptValue(value: string, userId: string): Promise<strin
   const plain = await crypto.subtle.decrypt({ name: ALGORITHM, iv: bytes(iv) as unknown as BufferSource }, keyFor(userId), bytes(encrypted) as unknown as BufferSource);
   return new TextDecoder().decode(plain);
 }
-export async function encryptFragmentFields(userId: string, input: { title?: string | null; content?: string }): Promise<{ title?: string | null; content?: string }> {
-  const result: { title?: string | null; content?: string } = {};
+export async function encryptFragmentFields(userId: string, input: { title?: string | null; content?: string; contexts?: string[] }): Promise<{ title?: string | null; content?: string; contexts?: string[] }> {
+  const result: { title?: string | null; content?: string; contexts?: string[] } = {};
   if (input.title !== undefined) result.title = input.title === null ? null : await encryptValue(input.title, userId);
   if (input.content !== undefined) result.content = await encryptValue(input.content, userId);
+  if (input.contexts !== undefined) result.contexts = await Promise.all(input.contexts.map(context => encryptValue(context, userId)));
   return result;
 }
-export async function decryptFragment(userId: string, fragment: { title: string | null; content: string }): Promise<{ title: string | null; content: string; legacy: boolean }> {
+export async function decryptFragment(userId: string, fragment: { title: string | null; content: string; contexts?: string[] }): Promise<{ title: string | null; content: string; contexts: string[]; legacy: boolean }> {
   const titleEncrypted = fragment.title === null || fragment.title.startsWith(`${FORMAT}:`);
   const contentEncrypted = fragment.content.startsWith(`${FORMAT}:`);
+  const storedContexts = fragment.contexts ?? [];
   return {
     title: fragment.title === null ? null : await decryptValue(fragment.title, userId),
     content: await decryptValue(fragment.content, userId),
-    legacy: !titleEncrypted || !contentEncrypted
+    contexts: await Promise.all(storedContexts.map(context => decryptValue(context, userId))),
+    legacy: !titleEncrypted || !contentEncrypted || storedContexts.some(context => !context.startsWith(`${FORMAT}:`))
   };
 }

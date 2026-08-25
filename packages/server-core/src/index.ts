@@ -18,6 +18,7 @@ export interface FragmentRepository {
   create(fragment: StoredFragment): Promise<StoredFragment>;
   findById(userId: string, id: string): Promise<StoredFragment | undefined>;
   findByDate(userId: string, date: string): Promise<StoredFragment[]>;
+  findAll(userId: string): Promise<StoredFragment[]>;
   update(userId: string, fragment: StoredFragment): Promise<StoredFragment | undefined>;
   delete(userId: string, id: string): Promise<boolean>;
 }
@@ -45,6 +46,7 @@ function createFragmentWithSource(repository: FragmentRepository, userId: string
     id: crypto.randomUUID(), userId,
     title: normaliseTitle(input.title),
     content: input.content.trim(),
+    contexts: normaliseContexts(input.contexts),
     source,
     createdAt,
     updatedAt: now
@@ -67,6 +69,7 @@ export async function updateFragment(repository: FragmentRepository, userId: str
     ...existing,
     title: input.title === undefined ? existing.title : normaliseTitle(input.title),
     content: input.content === undefined ? existing.content : input.content.trim(),
+    contexts: input.contexts === undefined ? existing.contexts : normaliseContexts(input.contexts),
     updatedAt: new Date().toISOString()
   });
   if (!updated) throw new FragmentNotFoundError();
@@ -80,6 +83,18 @@ export async function deleteFragment(repository: FragmentRepository, userId: str
 function normaliseTitle(title: string | null | undefined): string | null {
   const trimmed = title?.trim();
   return trimmed ? trimmed : null;
+}
+
+export function normaliseContexts(contexts: string[] | undefined): string[] {
+  if (!contexts) return [];
+  const result: string[] = [];
+  for (const context of contexts) {
+    const value = context.trim().replace(/\s+/g, ' ');
+    if (!value || value.length > 60 || result.some(existing => existing.toLocaleLowerCase() === value.toLocaleLowerCase())) continue;
+    result.push(value);
+    if (result.length === 12) break;
+  }
+  return result;
 }
 
 const SESSION_DAYS = 30;

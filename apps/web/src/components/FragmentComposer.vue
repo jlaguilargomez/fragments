@@ -1,19 +1,23 @@
 <script setup lang="ts">
 import { computed, onUnmounted, ref, useId } from 'vue';
 import { t, translateError } from '../i18n';
-const emit = defineEmits<{ save: [input: { title: string; content: string }]; cancel: [] }>();
+import ContextInput from './ContextInput.vue';
+const emit = defineEmits<{ save: [input: { title: string; content: string; contexts: string[] }]; cancel: [] }>();
 const props = withDefaults(defineProps<{
   initialTitle?: string | null;
   initialContent?: string;
+  initialContexts?: string[];
+  availableContexts?: string[];
   submitLabel?: string;
   compact?: boolean;
-  saveFragment?: (input: { title: string; content: string }) => Promise<boolean>;
+  saveFragment?: (input: { title: string; content: string; contexts: string[] }) => Promise<boolean>;
   transcribeFragment?: (audio: Blob) => Promise<boolean>;
 }>(), { initialTitle: '', initialContent: '', submitLabel: 'Save fragment', compact: false, saveFragment: undefined });
 const MAX_RECORDING_SECONDS = 300;
 const titleId = useId();
 const title = ref(props.initialTitle ?? '');
 const content = ref(props.initialContent);
+const contexts = ref([...(props.initialContexts ?? [])]);
 const captureMode = ref<'manual' | 'voice'>('manual');
 const recordingState = ref<'idle' | 'recording' | 'paused' | 'transcribing'>('idle');
 const recordingError = ref('');
@@ -26,12 +30,13 @@ let discardRecording = false;
 const recordingLabel = computed(() => `${Math.floor(elapsedSeconds.value / 60)}:${String(elapsedSeconds.value % 60).padStart(2, '0')}`);
 async function submit() {
   if (!content.value.trim() || recordingState.value !== 'idle') return;
-  const input = { title: title.value, content: content.value };
+  const input = { title: title.value, content: content.value, contexts: contexts.value };
   if (props.saveFragment) {
     const saved = await props.saveFragment(input);
     if (saved) {
       title.value = '';
       content.value = '';
+      contexts.value = [];
     }
     return;
   }
@@ -100,6 +105,7 @@ onUnmounted(() => { discardRecording = true; if (recorder && recorder.state !== 
     <template v-if="captureMode === 'manual' || !transcribeFragment || compact">
       <label class="composer-title-label" :for="titleId">{{ t('titleOptional') }}</label>
       <input :id="titleId" v-model="title" :aria-label="t('fragmentTitle')" :placeholder="t('titleHint')" maxlength="200" />
+      <ContextInput v-model="contexts" :suggestions="availableContexts" :compact="compact" />
       <textarea v-model="content" :aria-label="t('fragmentContent')" :placeholder="t('whatMind')" :rows="compact ? 4 : 7" maxlength="20000" required />
       <div class="composer-actions"><button v-if="compact" class="text-button" type="button" @click="emit('cancel')">{{ t('cancel') }}</button><button class="save-button" type="submit" :disabled="recordingState !== 'idle'">{{ submitLabel === 'Save fragment' ? t('saveFragment') : submitLabel === 'Save changes' ? t('saveChanges') : submitLabel }}</button></div>
     </template>
