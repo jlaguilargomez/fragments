@@ -5,7 +5,7 @@ const apiPrefix = baseUrl ? '' : (import.meta.env.DEV ? '' : '/api');
 export const isTrialMode = import.meta.env.VITE_TRIAL_MODE === 'true';
 export const signupEnabled = import.meta.env.VITE_ENABLE_SIGNUP === 'true';
 
-const TRIAL_STORAGE_KEY = 'fragments-trial-v1';
+const TRIAL_STORAGE_KEY = 'fragments-trial-v2';
 
 function welcomeFragments(): Fragment[] {
   const now = new Date();
@@ -14,8 +14,8 @@ function welcomeFragments(): Fragment[] {
   {
     id: 'demo-morning-walk',
     title: 'Morning walk',
-    content: 'Marco stopped to look at a ladybug on the way to school. He said it was wearing a tiny red coat.',
-    contexts: ['Marco'],
+    content: 'The morning light made the kitchen feel calm. I want to remember that quiet start.',
+    contexts: ['Observations'],
     source: 'text',
     createdAt: `${day}T08:42:00.000Z`,
     updatedAt: `${day}T08:42:00.000Z`
