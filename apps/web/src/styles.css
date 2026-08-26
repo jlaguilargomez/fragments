@@ -39,7 +39,7 @@ button { cursor: pointer; }
 .nav-action:hover { border-color: #8d8170; color: #171717; background: #f4efe7; }
 .nav-action:focus-visible { border-color: #8d8170; outline: none; box-shadow: 0 0 0 3px #8d817033; }
 .nav-action.is-active { border-color: #8d8170; color: #302a24; background: #eee7dc; box-shadow: inset 0 0 0 1px #d8cbbb; }
-.logout-button { border-color: #c9b6a9; color: #5d4438; background: #fffaf7; }
+.logout-button { width: 34px; padding: 6px; border-color: #c9b6a9; color: #5d4438; background: #fffaf7; }
 .logout-button:hover { border-color: #a97562; color: #7c3327; background: #fdf0eb; }
 .logout-icon { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
 .page { width: min(100% - 64px, 1080px); margin: 0 auto; padding: 36px 0 56px; }
